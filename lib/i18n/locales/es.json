@@ -1,0 +1,68 @@
+{
+  "app": {
+    "title": "Gestor de Techos",
+    "description": "Calcule las dimensiones del techo a dos aguas para constructores"
+  },
+  "sections": {
+    "inputs": "Entradas",
+    "visualization": "Visualización",
+    "results": "Resultados"
+  },
+  "inputs": {
+    "units": {
+      "label": "Unidades",
+      "imperial": "Imperial",
+      "metric": "Métrico"
+    },
+    "span": {
+      "label": "Luz ({{unit}})",
+      "placeholder": "Ingrese luz en {{unit}}",
+      "description": "Ancho total del edificio"
+    },
+    "pitchRise": {
+      "label": "Elevación de Pendiente ({{unit}})",
+      "placeholder": "Elevación",
+      "description": "Componente de elevación vertical de la pendiente"
+    },
+    "pitchRun": {
+      "label": "Carrera de Pendiente ({{unit}})",
+      "placeholder": "Carrera",
+      "description": "Componente de carrera horizontal (típicamente {{typical}})"
+    },
+    "commonPitches": "Pendientes Comunes:"
+  },
+  "results": {
+    "run": {
+      "title": "Carrera",
+      "description": "Distancia horizontal desde la pared hasta la cumbrera"
+    },
+    "rise": {
+      "title": "Elevación",
+      "description": "Altura vertical desde la pared hasta la cumbrera"
+    },
+    "rafterLength": {
+      "title": "Longitud de Viga Común",
+      "description": "Longitud desde la placa de pared hasta la cumbrera"
+    },
+    "pitchAngle": {
+      "title": "Ángulo de Pendiente",
+      "description": "Ángulo de inclinación del techo desde la horizontal"
+    },
+    "pitchRatio": {
+      "title": "Proporción de Pendiente",
+      "description": "Proporción de elevación sobre carrera"
+    },
+    "noResults": "Ingrese dimensiones válidas para ver resultados"
+  },
+  "canvas": {
+    "placeholder": "Marcador de posición del lienzo",
+    "description": "La visualización del techo irá aquí",
+    "pitch": "Pendiente: {{ratio}} ({{angle}}°)"
+  },
+  "units": {
+    "feet": "pies",
+    "meters": "m",
+    "inches": "pulg",
+    "centimeters": "cm"
+  }
+}

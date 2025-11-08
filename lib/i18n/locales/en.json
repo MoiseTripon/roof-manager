@@ -1,0 +1,68 @@
+{
+  "app": {
+    "title": "Roof Manager",
+    "description": "Calculate gable roof dimensions for builders"
+  },
+  "sections": {
+    "inputs": "Inputs",
+    "visualization": "Visualization",
+    "results": "Results"
+  },
+  "inputs": {
+    "units": {
+      "label": "Units",
+      "imperial": "Imperial",
+      "metric": "Metric"
+    },
+    "span": {
+      "label": "Span ({{unit}})",
+      "placeholder": "Enter span in {{unit}}",
+      "description": "Total width of the building"
+    },
+    "pitchRise": {
+      "label": "Pitch Rise ({{unit}})",
+      "placeholder": "Rise",
+      "description": "Vertical rise component of pitch"
+    },
+    "pitchRun": {
+      "label": "Pitch Run ({{unit}})",
+      "placeholder": "Run",
+      "description": "Horizontal run component (typically {{typical}})"
+    },
+    "commonPitches": "Common Pitches:"
+  },
+  "results": {
+    "run": {
+      "title": "Run",
+      "description": "Horizontal distance from wall to ridge"
+    },
+    "rise": {
+      "title": "Rise",
+      "description": "Vertical height from wall to ridge"
+    },
+    "rafterLength": {
+      "title": "Common Rafter Length",
+      "description": "Length from wall plate to ridge"
+    },
+    "pitchAngle": {
+      "title": "Pitch Angle",
+      "description": "Roof slope angle from horizontal"
+    },
+    "pitchRatio": {
+      "title": "Pitch Ratio",
+      "description": "Rise over run ratio"
+    },
+    "noResults": "Enter valid dimensions to see results"
+  },
+  "canvas": {
+    "placeholder": "Canvas placeholder",
+    "description": "Roof visualization will go here",
+    "pitch": "Pitch: {{ratio}} ({{angle}}°)"
+  },
+  "units": {
+    "feet": "ft",
+    "meters": "m",
+    "inches": "in",
+    "centimeters": "cm"
+  }
+}

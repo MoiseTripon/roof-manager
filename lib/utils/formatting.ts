@@ -8,6 +8,7 @@ export function formatDimension(
   return new Intl.NumberFormat(locale === "es" ? "es-ES" : "en-US", {
     minimumFractionDigits: decimals,
     maximumFractionDigits: decimals,
+    useGrouping: true,
   }).format(value);
 }
 

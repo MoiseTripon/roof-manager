@@ -3,6 +3,23 @@ import { render, screen } from "@testing-library/react";
 import { RoofGeometry } from "@/components/RoofGeometry";
 import "@testing-library/jest-dom";
 
+beforeAll(() => {
+  const originalError = console.error;
+  jest.spyOn(console, "error").mockImplementation((...args) => {
+    if (
+      typeof args[0] === "string" &&
+      args[0].includes("is unrecognized in this browser")
+    ) {
+      return;
+    }
+    originalError.call(console, ...args);
+  });
+});
+
+afterAll(() => {
+  jest.restoreAllMocks();
+});
+
 // Mock @react-three/drei
 jest.mock("@react-three/drei", () => ({
   Line: ({ points, color, "data-testid": testId }: any) => (

@@ -14,16 +14,8 @@ export const resources = {
   },
 } as const;
 
-// Check if we're on the client side
+// Disable detection during SSR to prevent hydration mismatches
 const isClient = typeof window !== "undefined";
-
-// Get stored locale from localStorage if available
-const getStoredLocale = (): string | null => {
-  if (isClient) {
-    return localStorage.getItem("preferred-locale");
-  }
-  return null;
-};
 
 i18n
   .use(LanguageDetector)
@@ -31,14 +23,19 @@ i18n
   .init({
     resources,
     fallbackLng: "en",
-    lng: getStoredLocale() || undefined, // Use stored locale if available
+    lng: "en", // Always start with "en" to ensure consistency
     debug: false,
     interpolation: {
       escapeValue: false,
     },
     detection: {
-      order: ["localStorage", "navigator", "htmlTag"],
-      caches: ["localStorage"],
+      // Disable detection during initialization
+      lookupLocalStorage: isClient ? "preferred-locale" : undefined,
+      order: isClient ? ["localStorage", "navigator", "htmlTag"] : [],
+      caches: isClient ? ["localStorage"] : [],
+    },
+    react: {
+      useSuspense: false, // Prevent suspense-based hydration issues
     },
   });
 
@@ -49,14 +46,3 @@ export type SupportedLocale = keyof typeof resources;
 export const supportedLocales: SupportedLocale[] = Object.keys(
   resources
 ) as SupportedLocale[];
-
-// Helper to get the initial locale without causing hydration issues
-export const getInitialLocale = (): SupportedLocale => {
-  if (isClient) {
-    const stored = localStorage.getItem("preferred-locale");
-    if (stored && supportedLocales.includes(stored as SupportedLocale)) {
-      return stored as SupportedLocale;
-    }
-  }
-  return "en";
-};

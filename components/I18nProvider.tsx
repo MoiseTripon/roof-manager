@@ -9,16 +9,17 @@ interface I18nProviderProps {
 }
 
 export function I18nProvider({ children }: I18nProviderProps) {
-  const [isHydrated, setIsHydrated] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
 
   useEffect(() => {
-    // Mark as hydrated after mount
-    setIsHydrated(true);
-
-    // Sync with stored preference after hydration
+    // Change language after hydration to avoid mismatches
     const storedLocale = localStorage.getItem("preferred-locale");
-    if (storedLocale && i18n.language !== storedLocale) {
-      i18n.changeLanguage(storedLocale);
+    if (storedLocale && storedLocale !== "en") {
+      i18n.changeLanguage(storedLocale).then(() => {
+        setIsInitialized(true);
+      });
+    } else {
+      setIsInitialized(true);
     }
   }, []);
 

@@ -8,7 +8,6 @@ import { LocaleSwitcher } from "@/components/LocaleSwitcher";
 import { formatDimension, formatAngle } from "@/lib/utils/formatting";
 import { useLocale } from "@/hooks/useLocale";
 
-// Dynamic import to avoid SSR issues with Three.js
 const RoofCanvas = dynamic(
   () => import("@/components/RoofCanvas").then((mod) => mod.RoofCanvas),
   {
@@ -32,7 +31,6 @@ export default function Home() {
   const [units, setUnits] = useState<Units>("imperial");
   const [ridgeOffset, setRidgeOffset] = useState<string>("0");
 
-  // Ensure client-side only rendering for certain features
   useEffect(() => {
     setMounted(true);
   }, []);
@@ -66,11 +64,12 @@ export default function Home() {
     }
   }, [span, pitchRise, pitchRun, units, ridgeOffset]);
 
-  const unitLabel = units === "imperial" ? "ft" : "m";
-  const pitchUnitLabel = units === "imperial" ? "in" : "cm";
+  const unitLabel = t(units === "imperial" ? "units.feet" : "units.meters");
+  const pitchUnitLabel = t(
+    units === "imperial" ? "units.inches" : "units.centimeters"
+  );
   const typicalRun = units === "imperial" ? "12" : "100";
 
-  // Safe formatting that waits for locale to be ready
   const safeFormatDimension = (value: number, decimals?: number) => {
     if (!isReady) return value.toFixed(decimals ?? 2);
     return formatDimension(value, currentLocale, decimals);
@@ -84,23 +83,23 @@ export default function Home() {
   const handleUnitsChange = (newUnits: Units) => {
     if (newUnits === units) return;
 
-    // Convert values when switching units
     const spanNum = parseFloat(span);
     const pitchRiseNum = parseFloat(pitchRise);
+    const pitchRunNum = parseFloat(pitchRun);
     const ridgeOffsetNum = parseFloat(ridgeOffset);
 
     if (newUnits === "metric" && units === "imperial") {
-      // Convert from imperial to metric
-      setSpan((spanNum * 0.3048).toFixed(2)); // feet to meters
-      setPitchRise((pitchRiseNum * 2.54).toFixed(1)); // inches to cm
-      setPitchRun("100"); // Standard metric run
-      setRidgeOffset((ridgeOffsetNum * 0.3048).toFixed(2)); // feet to meters
+      setSpan((spanNum * 0.3048).toFixed(2));
+      const slopeRatio = pitchRiseNum / pitchRunNum;
+      setPitchRun("100");
+      setPitchRise((slopeRatio * 100).toFixed(1));
+      setRidgeOffset((ridgeOffsetNum * 0.3048).toFixed(2));
     } else if (newUnits === "imperial" && units === "metric") {
-      // Convert from metric to imperial
-      setSpan((spanNum / 0.3048).toFixed(2)); // meters to feet
-      setPitchRise((pitchRiseNum / 2.54).toFixed(1)); // cm to inches
-      setPitchRun("12"); // Standard imperial run
-      setRidgeOffset((ridgeOffsetNum / 0.3048).toFixed(2)); // meters to feet
+      setSpan((spanNum / 0.3048).toFixed(2));
+      const slopeRatio = pitchRiseNum / pitchRunNum;
+      setPitchRun("12");
+      setPitchRise((slopeRatio * 12).toFixed(1));
+      setRidgeOffset((ridgeOffsetNum / 0.3048).toFixed(2));
     }
 
     setUnits(newUnits);
@@ -120,13 +119,11 @@ export default function Home() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left Column - Inputs */}
           <div className="bg-white rounded-lg shadow-md p-6">
             <h2 className="text-2xl font-semibold text-gray-800 mb-6">
               {t("sections.inputs")}
             </h2>
 
-            {/* Units Switch */}
             <div className="mb-6">
               <label className="block text-sm font-medium text-gray-700 mb-3">
                 {t("inputs.units.label")}
@@ -157,10 +154,9 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Span Input */}
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                {t("inputs.span.label")} ({unitLabel})
+                {t("inputs.span.label", { unit: unitLabel })}
               </label>
               <input
                 type="number"
@@ -169,16 +165,16 @@ export default function Home() {
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 min="0"
                 step="0.1"
+                placeholder={t("inputs.span.placeholder", { unit: unitLabel })}
               />
               <p className="text-xs text-gray-500 mt-1">
                 {t("inputs.span.description")}
               </p>
             </div>
 
-            {/* Pitch Rise Input */}
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                {t("inputs.pitchRise.label")} ({pitchUnitLabel})
+                {t("inputs.pitchRise.label", { unit: pitchUnitLabel })}
               </label>
               <input
                 type="number"
@@ -187,16 +183,16 @@ export default function Home() {
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 min="0"
                 step="0.1"
+                placeholder={t("inputs.pitchRise.placeholder")}
               />
               <p className="text-xs text-gray-500 mt-1">
                 {t("inputs.pitchRise.description")}
               </p>
             </div>
 
-            {/* Pitch Run Input */}
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                {t("inputs.pitchRun.label")} ({pitchUnitLabel})
+                {t("inputs.pitchRun.label", { unit: pitchUnitLabel })}
               </label>
               <input
                 type="number"
@@ -205,13 +201,13 @@ export default function Home() {
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 min="0.1"
                 step="0.1"
+                placeholder={t("inputs.pitchRun.placeholder")}
               />
               <p className="text-xs text-gray-500 mt-1">
                 {t("inputs.pitchRun.description", { typical: typicalRun })}
               </p>
             </div>
 
-            {/* Ridge Offset Input */}
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Ridge Offset ({unitLabel})
@@ -226,7 +222,6 @@ export default function Home() {
               <p className="text-xs text-gray-500 mt-1">
                 Positive moves ridge right, negative moves left
               </p>
-              {/* Slider for easier adjustment */}
               <input
                 type="range"
                 value={ridgeOffset}
@@ -239,7 +234,6 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Center Column - Canvas */}
           <div className="bg-white rounded-lg shadow-md p-6">
             <h2 className="text-2xl font-semibold text-gray-800 mb-6">
               {t("sections.visualization")}
@@ -280,12 +274,13 @@ export default function Home() {
               <div className="mt-6 space-y-3">
                 <div className="p-4 bg-blue-50 rounded-lg">
                   <p className="text-sm font-mono text-center text-gray-700">
-                    Base Pitch: {result.pitchRatio} (
-                    {safeFormatAngle(result.pitchAngle)}°)
+                    {t("canvas.pitch", {
+                      ratio: result.pitchRatio,
+                      angle: safeFormatAngle(result.pitchAngle),
+                    })}
                   </p>
                 </div>
 
-                {/* Display asymmetric angles when ridge is offset */}
                 {parseFloat(ridgeOffset) !== 0 && (
                   <div className="grid grid-cols-2 gap-3">
                     <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
@@ -310,7 +305,6 @@ export default function Home() {
             )}
           </div>
 
-          {/* Right Column - Outputs */}
           <div className="bg-white rounded-lg shadow-md p-6">
             <h2 className="text-2xl font-semibold text-gray-800 mb-6">
               {t("sections.results")}

@@ -66,10 +66,8 @@ export default function Home() {
     }
   }, [span, pitchRise, pitchRun, units, ridgeOffset]);
 
-  const unitLabel = t(units === "imperial" ? "units.feet" : "units.meters");
-  const pitchUnitLabel = t(
-    units === "imperial" ? "units.inches" : "units.centimeters"
-  );
+  const unitLabel = units === "imperial" ? "ft" : "m";
+  const pitchUnitLabel = units === "imperial" ? "in" : "cm";
   const typicalRun = units === "imperial" ? "12" : "100";
 
   // Safe formatting that waits for locale to be ready
@@ -89,7 +87,6 @@ export default function Home() {
     // Convert values when switching units
     const spanNum = parseFloat(span);
     const pitchRiseNum = parseFloat(pitchRise);
-    const pitchRunNum = parseFloat(pitchRun);
     const ridgeOffsetNum = parseFloat(ridgeOffset);
 
     if (newUnits === "metric" && units === "imperial") {
@@ -217,10 +214,7 @@ export default function Home() {
             {/* Ridge Offset Input */}
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                {t("inputs.ridgeOffset.label", {
-                  defaultValue: "Ridge Offset",
-                })}{" "}
-                ({unitLabel})
+                Ridge Offset ({unitLabel})
               </label>
               <input
                 type="number"
@@ -230,10 +224,7 @@ export default function Home() {
                 step="0.1"
               />
               <p className="text-xs text-gray-500 mt-1">
-                {t("inputs.ridgeOffset.description", {
-                  defaultValue:
-                    "Positive moves ridge right, negative moves left",
-                })}
+                Positive moves ridge right, negative moves left
               </p>
               {/* Slider for easier adjustment */}
               <input
@@ -289,10 +280,8 @@ export default function Home() {
               <div className="mt-6 space-y-3">
                 <div className="p-4 bg-blue-50 rounded-lg">
                   <p className="text-sm font-mono text-center text-gray-700">
-                    {t("canvas.pitch", {
-                      ratio: result.pitchRatio,
-                      angle: safeFormatAngle(result.pitchAngle),
-                    })}
+                    Base Pitch: {result.pitchRatio} (
+                    {safeFormatAngle(result.pitchAngle)}°)
                   </p>
                 </div>
 
@@ -301,9 +290,7 @@ export default function Home() {
                   <div className="grid grid-cols-2 gap-3">
                     <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
                       <p className="text-xs text-yellow-800 font-medium mb-1">
-                        {t("results.leftAngle.title", {
-                          defaultValue: "Left Slope Angle",
-                        })}
+                        Left Slope Angle
                       </p>
                       <p className="text-lg font-bold text-yellow-900">
                         {safeFormatAngle(result.leftAngle)}°
@@ -311,9 +298,7 @@ export default function Home() {
                     </div>
                     <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
                       <p className="text-xs text-yellow-800 font-medium mb-1">
-                        {t("results.rightAngle.title", {
-                          defaultValue: "Right Slope Angle",
-                        })}
+                        Right Slope Angle
                       </p>
                       <p className="text-lg font-bold text-yellow-900">
                         {safeFormatAngle(result.rightAngle)}°
@@ -433,17 +418,13 @@ export default function Home() {
                 {parseFloat(ridgeOffset) !== 0 && (
                   <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
                     <p className="text-sm text-red-800 font-medium mb-1">
-                      {t("results.ridgeOffset.title", {
-                        defaultValue: "Ridge Offset",
-                      })}
+                      Ridge Offset
                     </p>
                     <p className="text-2xl font-bold text-red-900">
                       {safeFormatDimension(parseFloat(ridgeOffset))} {unitLabel}
                     </p>
                     <p className="text-xs text-red-700 mt-1">
-                      {t("results.ridgeOffset.description", {
-                        defaultValue: "Distance from center",
-                      })}
+                      Distance from center
                     </p>
                   </div>
                 )}

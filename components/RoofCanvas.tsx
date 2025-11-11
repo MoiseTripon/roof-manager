@@ -16,7 +16,7 @@ export const RoofCanvas: React.FC<RoofCanvasProps> = ({
   run,
   rise,
   span,
-  ridgeOffset,
+  ridgeOffset = 0,
 }) => {
   return (
     <div className="w-full h-full" data-testid="roof-canvas">
@@ -28,7 +28,12 @@ export const RoofCanvas: React.FC<RoofCanvasProps> = ({
         <directionalLight position={[10, 10, 5]} intensity={1} />
 
         <Suspense fallback={null}>
-          <RoofGeometry run={run} rise={rise} span={span} />
+          <RoofGeometry
+            run={run}
+            rise={rise}
+            span={span}
+            ridgeOffset={ridgeOffset}
+          />
           <Grid
             args={[10, 10]}
             cellSize={0.5}

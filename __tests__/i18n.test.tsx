@@ -1,4 +1,4 @@
-import React from "react";
+import React, { act } from "react";
 import { render, screen, waitFor } from "@testing-library/react";
 import { I18nextProvider } from "react-i18next";
 import i18n from "i18next";
@@ -74,7 +74,9 @@ describe("i18n", () => {
   });
 
   it("renders text in Spanish when locale is changed", async () => {
-    await i18n.changeLanguage("es");
+    await act(async () => {
+      await i18n.changeLanguage("es");
+    });
 
     render(
       <I18nextProvider i18n={i18n}>
@@ -107,7 +109,9 @@ describe("i18n", () => {
     });
 
     // Change to Spanish
-    await i18n.changeLanguage("es");
+    await act(async () => {
+      await i18n.changeLanguage("es");
+    });
     rerender(
       <I18nextProvider i18n={i18n}>
         <TestComponent />
@@ -119,7 +123,9 @@ describe("i18n", () => {
     });
 
     // Change back to English
-    await i18n.changeLanguage("en");
+    await act(async () => {
+      await i18n.changeLanguage("en");
+    });
     rerender(
       <I18nextProvider i18n={i18n}>
         <TestComponent />

@@ -5,13 +5,18 @@ export interface RoofCalculatorParams {
   pitchRise: number; // rise in inches or cm
   pitchRun: number; // run in inches or cm (typically 12 or 100)
   units: Units;
+  ridgeOffset?: number; // horizontal offset of ridge from center (positive = right, negative = left)
 }
 
 export interface RoofCalculatorResult {
-  run: number; // horizontal distance from wall to ridge
+  run: number; // horizontal distance from wall to ridge (center-based)
   rise: number; // vertical distance from wall top to ridge
-  commonRafterLength: number; // length of rafter from wall to ridge
-  pitchAngle: number; // angle in degrees
+  commonRafterLength: number; // length of rafter from wall to ridge (when symmetric)
+  leftRafterLength: number; // length of left rafter
+  rightRafterLength: number; // length of right rafter
+  pitchAngle: number; // angle in degrees (base pitch)
+  leftAngle: number; // angle of left slope in degrees
+  rightAngle: number; // angle of right slope in degrees
   pitchRatio: string; // formatted pitch ratio
 }
 
@@ -23,7 +28,7 @@ export interface RoofCalculatorResult {
 export function useRoofCalculator(
   params: RoofCalculatorParams
 ): RoofCalculatorResult {
-  const { span, pitchRise, pitchRun, units } = params;
+  const { span, pitchRise, pitchRun, units, ridgeOffset = 0 } = params;
 
   // Validate inputs
   if (span <= 0) {
@@ -36,37 +41,51 @@ export function useRoofCalculator(
     throw new Error("Pitch run must be greater than 0");
   }
 
-  // Calculate run (half of span)
-  const run = span / 2;
-
-  // Calculate rise based on pitch
-  // pitch is expressed as rise/run (e.g., 6/12 means 6 inches of rise per 12 inches of run)
-  const rise = (run * pitchRise) / pitchRun;
+  // Calculate base run (half of span)
+  const baseRun = span / 2;
 
   // Convert to same units for calculation
   // For imperial: run is in feet, need to convert to inches to match pitch
   // For metric: run is in meters, need to convert to cm to match pitch
   const conversionFactor = units === "imperial" ? 12 : 100;
-  const runInSmallUnits = run * conversionFactor;
+  const runInSmallUnits = baseRun * conversionFactor;
   const riseInSmallUnits = (runInSmallUnits * pitchRise) / pitchRun;
   const riseInLargeUnits = riseInSmallUnits / conversionFactor;
 
-  // Calculate common rafter length using Pythagorean theorem
+  // Calculate runs for each side considering ridge offset
+  const leftRun = baseRun - ridgeOffset;
+  const rightRun = baseRun + ridgeOffset;
+
+  // Calculate rafter lengths using Pythagorean theorem
+  const leftRafterLength = Math.sqrt(
+    Math.pow(leftRun, 2) + Math.pow(riseInLargeUnits, 2)
+  );
+  const rightRafterLength = Math.sqrt(
+    Math.pow(rightRun, 2) + Math.pow(riseInLargeUnits, 2)
+  );
   const commonRafterLength = Math.sqrt(
-    Math.pow(run, 2) + Math.pow(riseInLargeUnits, 2)
+    Math.pow(baseRun, 2) + Math.pow(riseInLargeUnits, 2)
   );
 
-  // Calculate pitch angle in degrees
+  // Calculate pitch angles
   const pitchAngle = (Math.atan(pitchRise / pitchRun) * 180) / Math.PI;
+
+  // Calculate individual slope angles based on actual geometry
+  const leftAngle = (Math.atan(riseInLargeUnits / leftRun) * 180) / Math.PI;
+  const rightAngle = (Math.atan(riseInLargeUnits / rightRun) * 180) / Math.PI;
 
   // Format pitch ratio
   const pitchRatio = `${pitchRise}/${pitchRun}`;
 
   return {
-    run,
+    run: baseRun,
     rise: riseInLargeUnits,
     commonRafterLength,
+    leftRafterLength,
+    rightRafterLength,
     pitchAngle,
+    leftAngle,
+    rightAngle,
     pitchRatio,
   };
 }

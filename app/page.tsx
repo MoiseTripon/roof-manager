@@ -30,6 +30,7 @@ export default function Home() {
   const [pitchRise, setPitchRise] = useState<string>("6");
   const [pitchRun, setPitchRun] = useState<string>("12");
   const [units, setUnits] = useState<Units>("imperial");
+  const [ridgeOffset, setRidgeOffset] = useState<string>("0");
 
   // Ensure client-side only rendering for certain features
   useEffect(() => {
@@ -41,6 +42,7 @@ export default function Home() {
       const spanNum = parseFloat(span);
       const pitchRiseNum = parseFloat(pitchRise);
       const pitchRunNum = parseFloat(pitchRun);
+      const ridgeOffsetNum = parseFloat(ridgeOffset) || 0;
 
       if (
         isNaN(spanNum) ||
@@ -57,11 +59,12 @@ export default function Home() {
         pitchRise: pitchRiseNum,
         pitchRun: pitchRunNum,
         units,
+        ridgeOffset: ridgeOffsetNum,
       });
     } catch (error) {
       return null;
     }
-  }, [span, pitchRise, pitchRun, units]);
+  }, [span, pitchRise, pitchRun, units, ridgeOffset]);
 
   const unitLabel = t(units === "imperial" ? "units.feet" : "units.meters");
   const pitchUnitLabel = t(
@@ -78,6 +81,32 @@ export default function Home() {
   const safeFormatAngle = (value: number, decimals?: number) => {
     if (!isReady) return value.toFixed(decimals ?? 1);
     return formatAngle(value, currentLocale, decimals);
+  };
+
+  const handleUnitsChange = (newUnits: Units) => {
+    if (newUnits === units) return;
+
+    // Convert values when switching units
+    const spanNum = parseFloat(span);
+    const pitchRiseNum = parseFloat(pitchRise);
+    const pitchRunNum = parseFloat(pitchRun);
+    const ridgeOffsetNum = parseFloat(ridgeOffset);
+
+    if (newUnits === "metric" && units === "imperial") {
+      // Convert from imperial to metric
+      setSpan((spanNum * 0.3048).toFixed(2)); // feet to meters
+      setPitchRise((pitchRiseNum * 2.54).toFixed(1)); // inches to cm
+      setPitchRun("100"); // Standard metric run
+      setRidgeOffset((ridgeOffsetNum * 0.3048).toFixed(2)); // feet to meters
+    } else if (newUnits === "imperial" && units === "metric") {
+      // Convert from metric to imperial
+      setSpan((spanNum / 0.3048).toFixed(2)); // meters to feet
+      setPitchRise((pitchRiseNum / 2.54).toFixed(1)); // cm to inches
+      setPitchRun("12"); // Standard imperial run
+      setRidgeOffset((ridgeOffsetNum / 0.3048).toFixed(2)); // meters to feet
+    }
+
+    setUnits(newUnits);
   };
 
   return (
@@ -107,7 +136,7 @@ export default function Home() {
               </label>
               <div className="flex gap-2">
                 <button
-                  onClick={() => setUnits("imperial")}
+                  onClick={() => handleUnitsChange("imperial")}
                   className={`flex-1 px-4 py-2 rounded-md font-medium transition-colors ${
                     units === "imperial"
                       ? "bg-blue-600 text-white"
@@ -118,7 +147,7 @@ export default function Home() {
                   {t("inputs.units.imperial")}
                 </button>
                 <button
-                  onClick={() => setUnits("metric")}
+                  onClick={() => handleUnitsChange("metric")}
                   className={`flex-1 px-4 py-2 rounded-md font-medium transition-colors ${
                     units === "metric"
                       ? "bg-blue-600 text-white"
@@ -131,8 +160,92 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Rest of the inputs remain the same */}
-            {/* ... */}
+            {/* Span Input */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                {t("inputs.span.label")} ({unitLabel})
+              </label>
+              <input
+                type="number"
+                value={span}
+                onChange={(e) => setSpan(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                min="0"
+                step="0.1"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                {t("inputs.span.description")}
+              </p>
+            </div>
+
+            {/* Pitch Rise Input */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                {t("inputs.pitchRise.label")} ({pitchUnitLabel})
+              </label>
+              <input
+                type="number"
+                value={pitchRise}
+                onChange={(e) => setPitchRise(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                min="0"
+                step="0.1"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                {t("inputs.pitchRise.description")}
+              </p>
+            </div>
+
+            {/* Pitch Run Input */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                {t("inputs.pitchRun.label")} ({pitchUnitLabel})
+              </label>
+              <input
+                type="number"
+                value={pitchRun}
+                onChange={(e) => setPitchRun(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                min="0.1"
+                step="0.1"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                {t("inputs.pitchRun.description", { typical: typicalRun })}
+              </p>
+            </div>
+
+            {/* Ridge Offset Input */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                {t("inputs.ridgeOffset.label", {
+                  defaultValue: "Ridge Offset",
+                })}{" "}
+                ({unitLabel})
+              </label>
+              <input
+                type="number"
+                value={ridgeOffset}
+                onChange={(e) => setRidgeOffset(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                step="0.1"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                {t("inputs.ridgeOffset.description", {
+                  defaultValue:
+                    "Positive moves ridge right, negative moves left",
+                })}
+              </p>
+              {/* Slider for easier adjustment */}
+              <input
+                type="range"
+                value={ridgeOffset}
+                onChange={(e) => setRidgeOffset(e.target.value)}
+                min={-parseFloat(span) / 2 || -12}
+                max={parseFloat(span) / 2 || 12}
+                step="0.1"
+                className="w-full mt-2"
+              />
+            </div>
           </div>
 
           {/* Center Column - Canvas */}
@@ -146,6 +259,7 @@ export default function Home() {
                   run={result.run}
                   rise={result.rise}
                   span={parseFloat(span)}
+                  ridgeOffset={parseFloat(ridgeOffset) || 0}
                 />
               ) : (
                 <div className="h-full flex items-center justify-center border-2 border-dashed border-gray-300">
@@ -172,13 +286,41 @@ export default function Home() {
             </div>
 
             {result && mounted && (
-              <div className="mt-6 p-4 bg-blue-50 rounded-lg">
-                <p className="text-sm font-mono text-center text-gray-700">
-                  {t("canvas.pitch", {
-                    ratio: result.pitchRatio,
-                    angle: safeFormatAngle(result.pitchAngle),
-                  })}
-                </p>
+              <div className="mt-6 space-y-3">
+                <div className="p-4 bg-blue-50 rounded-lg">
+                  <p className="text-sm font-mono text-center text-gray-700">
+                    {t("canvas.pitch", {
+                      ratio: result.pitchRatio,
+                      angle: safeFormatAngle(result.pitchAngle),
+                    })}
+                  </p>
+                </div>
+
+                {/* Display asymmetric angles when ridge is offset */}
+                {parseFloat(ridgeOffset) !== 0 && (
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                      <p className="text-xs text-yellow-800 font-medium mb-1">
+                        {t("results.leftAngle.title", {
+                          defaultValue: "Left Slope Angle",
+                        })}
+                      </p>
+                      <p className="text-lg font-bold text-yellow-900">
+                        {safeFormatAngle(result.leftAngle)}°
+                      </p>
+                    </div>
+                    <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                      <p className="text-xs text-yellow-800 font-medium mb-1">
+                        {t("results.rightAngle.title", {
+                          defaultValue: "Right Slope Angle",
+                        })}
+                      </p>
+                      <p className="text-lg font-bold text-yellow-900">
+                        {safeFormatAngle(result.rightAngle)}°
+                      </p>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -219,9 +361,29 @@ export default function Home() {
                   <p className="text-sm text-purple-800 font-medium mb-1">
                     {t("results.rafterLength.title")}
                   </p>
-                  <p className="text-2xl font-bold text-purple-900">
-                    {safeFormatDimension(result.commonRafterLength)} {unitLabel}
-                  </p>
+                  {parseFloat(ridgeOffset) === 0 ? (
+                    <p className="text-2xl font-bold text-purple-900">
+                      {safeFormatDimension(result.commonRafterLength)}{" "}
+                      {unitLabel}
+                    </p>
+                  ) : (
+                    <div className="space-y-1">
+                      <p className="text-sm text-purple-900">
+                        Left:{" "}
+                        <span className="font-bold">
+                          {safeFormatDimension(result.leftRafterLength)}
+                        </span>{" "}
+                        {unitLabel}
+                      </p>
+                      <p className="text-sm text-purple-900">
+                        Right:{" "}
+                        <span className="font-bold">
+                          {safeFormatDimension(result.rightRafterLength)}
+                        </span>{" "}
+                        {unitLabel}
+                      </p>
+                    </div>
+                  )}
                   <p className="text-xs text-purple-700 mt-1">
                     {t("results.rafterLength.description")}
                   </p>
@@ -231,9 +393,26 @@ export default function Home() {
                   <p className="text-sm text-orange-800 font-medium mb-1">
                     {t("results.pitchAngle.title")}
                   </p>
-                  <p className="text-2xl font-bold text-orange-900">
-                    {safeFormatAngle(result.pitchAngle)}°
-                  </p>
+                  {parseFloat(ridgeOffset) === 0 ? (
+                    <p className="text-2xl font-bold text-orange-900">
+                      {safeFormatAngle(result.pitchAngle)}°
+                    </p>
+                  ) : (
+                    <div className="space-y-1">
+                      <p className="text-sm text-orange-900">
+                        Left:{" "}
+                        <span className="font-bold">
+                          {safeFormatAngle(result.leftAngle)}°
+                        </span>
+                      </p>
+                      <p className="text-sm text-orange-900">
+                        Right:{" "}
+                        <span className="font-bold">
+                          {safeFormatAngle(result.rightAngle)}°
+                        </span>
+                      </p>
+                    </div>
+                  )}
                   <p className="text-xs text-orange-700 mt-1">
                     {t("results.pitchAngle.description")}
                   </p>
@@ -250,6 +429,24 @@ export default function Home() {
                     {t("results.pitchRatio.description")}
                   </p>
                 </div>
+
+                {parseFloat(ridgeOffset) !== 0 && (
+                  <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+                    <p className="text-sm text-red-800 font-medium mb-1">
+                      {t("results.ridgeOffset.title", {
+                        defaultValue: "Ridge Offset",
+                      })}
+                    </p>
+                    <p className="text-2xl font-bold text-red-900">
+                      {safeFormatDimension(parseFloat(ridgeOffset))} {unitLabel}
+                    </p>
+                    <p className="text-xs text-red-700 mt-1">
+                      {t("results.ridgeOffset.description", {
+                        defaultValue: "Distance from center",
+                      })}
+                    </p>
+                  </div>
+                )}
               </div>
             ) : (
               <div className="text-center py-12">

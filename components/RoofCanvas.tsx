@@ -9,9 +9,15 @@ interface RoofCanvasProps {
   run: number;
   rise: number;
   span: number;
+  ridgeOffset?: number;
 }
 
-export const RoofCanvas: React.FC<RoofCanvasProps> = ({ run, rise, span }) => {
+export const RoofCanvas: React.FC<RoofCanvasProps> = ({
+  run,
+  rise,
+  span,
+  ridgeOffset,
+}) => {
   return (
     <div className="w-full h-full" data-testid="roof-canvas">
       <Canvas>

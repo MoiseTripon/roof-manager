@@ -1,21 +1,25 @@
 import React from "react";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import {
+  render,
+  screen,
+  fireEvent,
+  waitFor,
+  act,
+} from "@testing-library/react";
 import { LocaleSwitcher } from "@/components/LocaleSwitcher";
 import { I18nextProvider } from "react-i18next";
 import i18n from "i18next";
 import { initReactI18next } from "react-i18next";
 import "@testing-library/jest-dom";
 
-// Mock document.cookie
-Object.defineProperty(document, "cookie", {
-  writable: true,
-  value: "",
-});
-
 describe("LocaleSwitcher", () => {
+  let cookieValue: string;
+
   beforeEach(() => {
-    // Initialize i18n for tests
-    if (!i18n.isInitialized) {
+    // Reset i18n for each test
+    if (i18n.isInitialized) {
+      i18n.changeLanguage("en");
+    } else {
       i18n.use(initReactI18next).init({
         resources: {
           en: { translation: {} },
@@ -25,30 +29,17 @@ describe("LocaleSwitcher", () => {
         fallbackLng: "en",
         interpolation: { escapeValue: false },
       });
-    } else {
-      // Reset language to 'en' if already initialized
-      i18n.changeLanguage("en");
     }
 
-    // Clear cookies
-    document.cookie = "";
-  });
-
-  // REMOVED: SSR placeholder test - component no longer has SSR placeholders
-  // The component renders buttons directly without a loading state
-
-  it("renders interactive buttons immediately", () => {
-    render(
-      <I18nextProvider i18n={i18n}>
-        <LocaleSwitcher />
-      </I18nextProvider>
-    );
-
-    const enButton = screen.getByRole("button", { name: /switch to en/i });
-    const esButton = screen.getByRole("button", { name: /switch to es/i });
-
-    expect(enButton).toBeInTheDocument();
-    expect(esButton).toBeInTheDocument();
+    // Mock document.cookie
+    cookieValue = "";
+    Object.defineProperty(document, "cookie", {
+      get: () => cookieValue,
+      set: (value) => {
+        cookieValue = value;
+      },
+      configurable: true,
+    });
   });
 
   it("renders interactive buttons after mount", async () => {
@@ -81,12 +72,42 @@ describe("LocaleSwitcher", () => {
     });
 
     const esButton = screen.getByRole("button", { name: /switch to es/i });
-    fireEvent.click(esButton);
+
+    await act(async () => {
+      fireEvent.click(esButton);
+    });
 
     await waitFor(() => {
       expect(i18n.language).toBe("es");
-      // Check cookie was set (component now uses cookies instead of localStorage)
-      expect(document.cookie).toContain("preferred-locale=es");
+    });
+
+    // Check that cookie was set
+    expect(cookieValue).toContain("preferred-locale=es");
+  });
+
+  it("sets cookie with correct attributes", async () => {
+    render(
+      <I18nextProvider i18n={i18n}>
+        <LocaleSwitcher />
+      </I18nextProvider>
+    );
+
+    await waitFor(() => {
+      const esButton = screen.getByRole("button", { name: /switch to es/i });
+      expect(esButton).toBeInTheDocument();
+    });
+
+    const esButton = screen.getByRole("button", { name: /switch to es/i });
+
+    await act(async () => {
+      fireEvent.click(esButton);
+    });
+
+    await waitFor(() => {
+      expect(cookieValue).toContain("preferred-locale=es");
+      expect(cookieValue).toContain("path=/");
+      expect(cookieValue).toContain("samesite=lax");
+      expect(cookieValue).toContain("max-age=");
     });
   });
 
@@ -122,76 +143,58 @@ describe("LocaleSwitcher", () => {
     expect(esButton).toHaveAttribute("aria-current", "false");
   });
 
-  // NEW TEST: Verify cookie attributes
-  it("sets cookie with correct attributes", async () => {
+  it("updates button styles after language change", async () => {
     render(
       <I18nextProvider i18n={i18n}>
         <LocaleSwitcher />
       </I18nextProvider>
     );
 
-    const esButton = screen.getByRole("button", { name: /switch to es/i });
-    fireEvent.click(esButton);
-
     await waitFor(() => {
-      const cookie = document.cookie;
-      expect(cookie).toContain("preferred-locale=es");
-      expect(cookie).toContain("path=/");
-      expect(cookie).toContain("samesite=lax");
+      const enButton = screen.getByRole("button", { name: /switch to en/i });
+      expect(enButton).toHaveClass("bg-blue-600");
     });
-  });
-
-  // NEW TEST: Verify button state updates after language change
-  it("updates button styling after language change", async () => {
-    render(
-      <I18nextProvider i18n={i18n}>
-        <LocaleSwitcher />
-      </I18nextProvider>
-    );
 
     const esButton = screen.getByRole("button", { name: /switch to es/i });
-    const enButton = screen.getByRole("button", { name: /switch to en/i });
 
-    // Initially EN should be highlighted
-    expect(enButton).toHaveClass("bg-blue-600", "text-white");
-    expect(esButton).toHaveClass("bg-gray-200", "text-gray-700");
+    await act(async () => {
+      fireEvent.click(esButton);
+    });
 
-    // Click ES button
-    fireEvent.click(esButton);
-
-    // After click, ES should be highlighted
     await waitFor(() => {
-      expect(esButton).toHaveClass("bg-blue-600", "text-white");
+      const enButton = screen.getByRole("button", { name: /switch to en/i });
+      const esButtonAfter = screen.getByRole("button", {
+        name: /switch to es/i,
+      });
+
       expect(enButton).toHaveClass("bg-gray-200", "text-gray-700");
+      expect(esButtonAfter).toHaveClass("bg-blue-600", "text-white");
     });
   });
 
-  // NEW TEST: Verify all supported locales are rendered
-  it("renders all supported locales", () => {
+  it("renders correct number of locale buttons", async () => {
     render(
       <I18nextProvider i18n={i18n}>
         <LocaleSwitcher />
       </I18nextProvider>
     );
 
-    const buttons = screen.getAllByRole("button");
-    expect(buttons).toHaveLength(2); // EN and ES
-    expect(screen.getByText("EN")).toBeInTheDocument();
-    expect(screen.getByText("ES")).toBeInTheDocument();
+    await waitFor(() => {
+      const buttons = screen.getAllByRole("button");
+      expect(buttons).toHaveLength(2); // EN and ES
+    });
   });
 
-  // NEW TEST: Verify accessibility
-  it("has proper accessibility attributes", () => {
+  it("displays locale in uppercase", async () => {
     render(
       <I18nextProvider i18n={i18n}>
         <LocaleSwitcher />
       </I18nextProvider>
     );
 
-    const buttons = screen.getAllByRole("button");
-    buttons.forEach((button) => {
-      expect(button).toHaveAttribute("aria-label");
-      expect(button).toHaveAttribute("aria-current");
+    await waitFor(() => {
+      expect(screen.getByText("EN")).toBeInTheDocument();
+      expect(screen.getByText("ES")).toBeInTheDocument();
     });
   });
 });

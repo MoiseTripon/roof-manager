@@ -1,42 +1,25 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { useTranslation } from "react-i18next";
 import { supportedLocales, SupportedLocale } from "@/lib/i18n/config";
 
 export const LocaleSwitcher: React.FC = () => {
   const { i18n } = useTranslation();
-  const [mounted, setMounted] = useState(false);
-
-  // Prevent hydration mismatch by only rendering interactive elements after mount
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   const handleLocaleChange = (locale: SupportedLocale) => {
-    i18n.changeLanguage(locale);
-    // Optionally store in localStorage for persistence
-    if (typeof window !== "undefined") {
-      localStorage.setItem("preferred-locale", locale);
-    }
-  };
+    // Set cookie for persistence
+    document.cookie = `preferred-locale=${locale};max-age=${
+      365 * 24 * 60 * 60
+    };path=/;samesite=lax`;
 
-  // Return a placeholder during SSR and initial hydration
-  if (!mounted) {
-    return (
-      <div className="flex gap-2">
-        {supportedLocales.map((locale) => (
-          <div
-            key={locale}
-            className="px-3 py-1 rounded-md text-sm font-medium bg-gray-200 text-gray-700 animate-pulse"
-            aria-hidden="true"
-          >
-            {locale.toUpperCase()}
-          </div>
-        ))}
-      </div>
-    );
-  }
+    // Change language
+    i18n.changeLanguage(locale);
+
+    // Optional: Force router refresh to ensure all server components get updated
+    // This will cause a full page reload but ensures consistency
+    // window.location.reload();
+  };
 
   return (
     <div className="flex gap-2">

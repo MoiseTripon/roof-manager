@@ -1,42 +1,36 @@
-export type Units = "imperial" | "metric";
+import {
+  Units,
+  Wall,
+  RoofSide,
+  RoofConfig,
+  RoofCalculatorResult,
+} from "@/types/roof";
+
+export type { Units };
 
 export interface RoofCalculatorParams {
-  span: number;
+  walls: Wall[];
   pitchRise: number;
   pitchRun: number;
   units: Units;
-  ridgeOffset?: number; // positive = towards wall2, negative = towards wall1
-  wall1Height?: number; // formerly leftWallHeight
-  wall2Height?: number; // formerly rightWallHeight
-}
-
-export interface RoofCalculatorResult {
-  run: number;
-  rise: number;
-  ridgeHeight: number;
-  commonRafterLength: number;
-  wall1RafterLength: number; // formerly leftRafterLength
-  wall2RafterLength: number; // formerly rightRafterLength
-  pitchAngle: number;
-  wall1Angle: number; // formerly leftAngle
-  wall2Angle: number; // formerly rightAngle
-  pitchRatio: string;
-  wall1Run: number; // horizontal distance from wall1 to ridge
-  wall2Run: number; // horizontal distance from wall2 to ridge
+  ridgeOffset?: number;
 }
 
 export function useRoofCalculator(
   params: RoofCalculatorParams
 ): RoofCalculatorResult {
-  const {
-    span,
-    pitchRise,
-    pitchRun,
-    units,
-    ridgeOffset = 0,
-    wall1Height = 8,
-    wall2Height = 8,
-  } = params;
+  const { walls, pitchRise, pitchRun, units, ridgeOffset = 0 } = params;
+
+  // Find front and back walls for gable roof calculation
+  const frontWall = walls.find((w) => w.position === "front");
+  const backWall = walls.find((w) => w.position === "back");
+
+  if (!frontWall || !backWall) {
+    throw new Error("Gable roof requires front and back walls");
+  }
+
+  // Calculate span (distance between front and back walls)
+  const span = frontWall.length; // Assuming rectangular building
 
   if (span <= 0) {
     throw new Error("Span must be greater than 0");
@@ -47,64 +41,78 @@ export function useRoofCalculator(
   if (pitchRun <= 0) {
     throw new Error("Pitch run must be greater than 0");
   }
-  if (wall1Height < 0 || wall2Height < 0) {
-    throw new Error("Wall heights must be non-negative");
-  }
 
   const baseRun = span / 2;
 
+  // Convert to same units for calculation
   const conversionFactor = units === "imperial" ? 12 : 100;
   const runInSmallUnits = baseRun * conversionFactor;
   const riseInSmallUnits = (runInSmallUnits * pitchRise) / pitchRun;
   const riseInLargeUnits = riseInSmallUnits / conversionFactor;
 
-  const avgWallHeight = (wall1Height + wall2Height) / 2;
+  // Calculate average wall height for ridge
+  const avgWallHeight = (frontWall.height + backWall.height) / 2;
   const ridgeHeight = avgWallHeight + riseInLargeUnits;
 
-  // FIXED: Correct horizontal runs for each side
-  // ridgeOffset positive = ridge moves towards wall2 (right)
-  // This means wall1 side gets longer, wall2 side gets shorter
-  const wall1Run = baseRun + ridgeOffset;
-  const wall2Run = baseRun - ridgeOffset;
+  // Calculate roof sides
+  const roofSides: RoofSide[] = [];
 
-  // Calculate actual vertical rise from each wall top to ridge
-  const wall1Rise = ridgeHeight - wall1Height;
-  const wall2Rise = ridgeHeight - wall2Height;
+  // Front roof side
+  const frontRun = baseRun + ridgeOffset;
+  const frontRise = ridgeHeight - frontWall.height;
+  const frontRafterLength = Math.sqrt(
+    Math.pow(frontRun, 2) + Math.pow(frontRise, 2)
+  );
+  const frontAngle =
+    frontRun > 0 ? (Math.atan(frontRise / frontRun) * 180) / Math.PI : 90;
 
-  // Calculate rafter lengths
-  const wall1RafterLength = Math.sqrt(
-    Math.pow(wall1Run, 2) + Math.pow(wall1Rise, 2)
+  roofSides.push({
+    id: "front-roof",
+    name: `${frontWall.name} Roof Side`,
+    attachedWallId: frontWall.id,
+    rafterLength: frontRafterLength,
+    angle: frontAngle,
+    horizontalRun: frontRun,
+    verticalRise: frontRise,
+  });
+
+  // Back roof side
+  const backRun = baseRun - ridgeOffset;
+  const backRise = ridgeHeight - backWall.height;
+  const backRafterLength = Math.sqrt(
+    Math.pow(backRun, 2) + Math.pow(backRise, 2)
   );
-  const wall2RafterLength = Math.sqrt(
-    Math.pow(wall2Run, 2) + Math.pow(wall2Rise, 2)
-  );
+  const backAngle =
+    backRun > 0 ? (Math.atan(backRise / backRun) * 180) / Math.PI : 90;
+
+  roofSides.push({
+    id: "back-roof",
+    name: `${backWall.name} Roof Side`,
+    attachedWallId: backWall.id,
+    rafterLength: backRafterLength,
+    angle: backAngle,
+    horizontalRun: backRun,
+    verticalRise: backRise,
+  });
+
+  const pitchAngle = (Math.atan(pitchRise / pitchRun) * 180) / Math.PI;
+  const pitchRatio = `${pitchRise}/${pitchRun}`;
   const commonRafterLength = Math.sqrt(
     Math.pow(baseRun, 2) + Math.pow(riseInLargeUnits, 2)
   );
 
-  const pitchAngle = (Math.atan(pitchRise / pitchRun) * 180) / Math.PI;
-
-  // Calculate actual slope angles
-  const wall1Angle =
-    wall1Run > 0 ? (Math.atan(wall1Rise / wall1Run) * 180) / Math.PI : 90;
-  const wall2Angle =
-    wall2Run > 0 ? (Math.atan(wall2Rise / wall2Run) * 180) / Math.PI : 90;
-
-  const pitchRatio = `${pitchRise}/${pitchRun}`;
-
   return {
-    run: baseRun,
-    rise: riseInLargeUnits,
-    ridgeHeight,
-    commonRafterLength,
-    wall1RafterLength,
-    wall2RafterLength,
+    walls,
+    roofSides,
+    ridge: {
+      offset: ridgeOffset,
+      height: ridgeHeight,
+    },
+    baseRun,
+    baseRise: riseInLargeUnits,
     pitchAngle,
-    wall1Angle,
-    wall2Angle,
     pitchRatio,
-    wall1Run,
-    wall2Run,
+    commonRafterLength,
   };
 }
 

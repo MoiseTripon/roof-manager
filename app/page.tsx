@@ -7,6 +7,8 @@ import { useRoofCalculator, Units } from "@/lib/roofCalculator";
 import { LocaleSwitcher } from "@/components/LocaleSwitcher";
 import { formatDimension, formatAngle } from "@/lib/utils/formatting";
 import { useLocale } from "@/hooks/useLocale";
+import { Wall } from "@/types/roof";
+import { WallEditor } from "@/components/WallEditor";
 
 const RoofCanvas = dynamic(
   () => import("@/components/RoofCanvas").then((mod) => mod.RoofCanvas),
@@ -20,59 +22,99 @@ const RoofCanvas = dynamic(
   }
 );
 
+const createInitialWalls = (units: Units): Wall[] => {
+  const defaultHeight = units === "imperial" ? 8 : 2.4;
+  const defaultSpan = units === "imperial" ? 24 : 7.3;
+  const defaultWidth = units === "imperial" ? 30 : 9.1;
+
+  return [
+    {
+      id: "front",
+      name: "Front Wall",
+      height: defaultHeight,
+      length: defaultWidth,
+      position: "front",
+    },
+    {
+      id: "back",
+      name: "Back Wall",
+      height: defaultHeight,
+      length: defaultWidth,
+      position: "back",
+    },
+    {
+      id: "left",
+      name: "Left Wall",
+      height: defaultHeight,
+      length: defaultSpan,
+      position: "left",
+    },
+    {
+      id: "right",
+      name: "Right Wall",
+      height: defaultHeight,
+      length: defaultSpan,
+      position: "right",
+    },
+  ];
+};
+
 export default function Home() {
   const { t } = useTranslation();
   const { currentLocale, isReady } = useLocale();
   const [mounted, setMounted] = useState(false);
 
-  const [span, setSpan] = useState<string>("24");
+  const [units, setUnits] = useState<Units>("imperial");
+  const [walls, setWalls] = useState<Wall[]>(() =>
+    createInitialWalls("imperial")
+  );
   const [pitchRise, setPitchRise] = useState<string>("6");
   const [pitchRun, setPitchRun] = useState<string>("12");
-  const [units, setUnits] = useState<Units>("imperial");
   const [ridgeOffset, setRidgeOffset] = useState<string>("0");
-  const [wall1Height, setWall1Height] = useState<string>("8");
-  const [wall2Height, setWall2Height] = useState<string>("8");
-  const [wall1Name, setWall1Name] = useState<string>("Wall 1");
-  const [wall2Name, setWall2Name] = useState<string>("Wall 2");
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
+  // Get span from front/back walls (they should have same length)
+  const span = useMemo(() => {
+    const leftWall = walls.find((w) => w.position === "left");
+    return leftWall?.length || 24;
+  }, [walls]);
+
+  // Get width from left/right walls
+  const width = useMemo(() => {
+    const frontWall = walls.find((w) => w.position === "front");
+    return frontWall?.length || 30;
+  }, [walls]);
+
   const result = useMemo(() => {
     try {
-      const spanNum = parseFloat(span);
       const pitchRiseNum = parseFloat(pitchRise);
       const pitchRunNum = parseFloat(pitchRun);
       const ridgeOffsetNum = parseFloat(ridgeOffset) || 0;
-      const wall1HeightNum = parseFloat(wall1Height) || 8;
-      const wall2HeightNum = parseFloat(wall2Height) || 8;
 
       if (
-        isNaN(spanNum) ||
         isNaN(pitchRiseNum) ||
         isNaN(pitchRunNum) ||
-        spanNum <= 0 ||
         pitchRunNum <= 0 ||
-        wall1HeightNum < 0 ||
-        wall2HeightNum < 0
+        walls.some((w) => w.height < 0 || w.length <= 0)
       ) {
         return null;
       }
 
       return useRoofCalculator({
-        span: spanNum,
+        walls,
         pitchRise: pitchRiseNum,
         pitchRun: pitchRunNum,
         units,
         ridgeOffset: ridgeOffsetNum,
-        wall1Height: wall1HeightNum,
-        wall2Height: wall2HeightNum,
       });
     } catch (error) {
+      console.error("Calculation error:", error);
       return null;
     }
-  }, [span, pitchRise, pitchRun, units, ridgeOffset, wall1Height, wall2Height]);
+  }, [walls, pitchRise, pitchRun, units, ridgeOffset]);
 
   const unitLabel = t(units === "imperial" ? "units.feet" : "units.meters");
   const pitchUnitLabel = t(
@@ -93,36 +135,46 @@ export default function Home() {
   const handleUnitsChange = (newUnits: Units) => {
     if (newUnits === units) return;
 
-    const spanNum = parseFloat(span);
+    const conversionFactor = newUnits === "metric" ? 0.3048 : 1 / 0.3048;
     const pitchRiseNum = parseFloat(pitchRise);
     const pitchRunNum = parseFloat(pitchRun);
     const ridgeOffsetNum = parseFloat(ridgeOffset);
-    const wall1HeightNum = parseFloat(wall1Height);
-    const wall2HeightNum = parseFloat(wall2Height);
 
-    if (newUnits === "metric" && units === "imperial") {
-      setSpan((spanNum * 0.3048).toFixed(2));
+    // Convert walls
+    setWalls(
+      walls.map((wall) => ({
+        ...wall,
+        height: wall.height * conversionFactor,
+        length: wall.length * conversionFactor,
+      }))
+    );
+
+    // Convert pitch
+    if (newUnits === "metric") {
       const slopeRatio = pitchRiseNum / pitchRunNum;
       setPitchRun("100");
       setPitchRise((slopeRatio * 100).toFixed(1));
-      setRidgeOffset((ridgeOffsetNum * 0.3048).toFixed(2));
-      setWall1Height((wall1HeightNum * 0.3048).toFixed(2));
-      setWall2Height((wall2HeightNum * 0.3048).toFixed(2));
-    } else if (newUnits === "imperial" && units === "metric") {
-      setSpan((spanNum / 0.3048).toFixed(2));
+    } else {
       const slopeRatio = pitchRiseNum / pitchRunNum;
       setPitchRun("12");
       setPitchRise((slopeRatio * 12).toFixed(1));
-      setRidgeOffset((ridgeOffsetNum / 0.3048).toFixed(2));
-      setWall1Height((wall1HeightNum / 0.3048).toFixed(2));
-      setWall2Height((wall2HeightNum / 0.3048).toFixed(2));
     }
 
+    setRidgeOffset((ridgeOffsetNum * conversionFactor).toFixed(2));
     setUnits(newUnits);
   };
 
-  const hasDifferentWallHeights =
-    parseFloat(wall1Height) !== parseFloat(wall2Height);
+  const handleUpdateWall = (wallId: string, updates: Partial<Wall>) => {
+    setWalls(
+      walls.map((wall) => (wall.id === wallId ? { ...wall, ...updates } : wall))
+    );
+  };
+
+  const hasDifferentWallHeights = useMemo(() => {
+    const frontWall = walls.find((w) => w.position === "front");
+    const backWall = walls.find((w) => w.position === "back");
+    return frontWall && backWall && frontWall.height !== backWall.height;
+  }, [walls]);
 
   return (
     <main className="min-h-screen bg-gray-50 p-8">
@@ -175,16 +227,12 @@ export default function Home() {
 
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                {t("inputs.span.label", { unit: unitLabel })}
+                Walls Configuration
               </label>
-              <input
-                type="number"
-                value={span}
-                onChange={(e) => setSpan(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                min="0"
-                step="0.1"
-                placeholder={t("inputs.span.placeholder", { unit: unitLabel })}
+              <WallEditor
+                walls={walls}
+                onUpdateWall={handleUpdateWall}
+                unitLabel={unitLabel}
               />
             </div>
 
@@ -216,50 +264,6 @@ export default function Home() {
               />
             </div>
 
-            <div className="mb-4 p-3 bg-gray-50 rounded-lg">
-              <label className="block text-sm font-medium text-gray-700 mb-3">
-                Wall Heights ({unitLabel})
-              </label>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <div className="flex items-center gap-2 mb-1">
-                    <input
-                      type="text"
-                      value={wall1Name}
-                      onChange={(e) => setWall1Name(e.target.value)}
-                      className="text-xs text-gray-600 bg-transparent border-b border-gray-300 focus:border-blue-500 focus:outline-none w-full"
-                    />
-                  </div>
-                  <input
-                    type="number"
-                    value={wall1Height}
-                    onChange={(e) => setWall1Height(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    min="0"
-                    step="0.1"
-                  />
-                </div>
-                <div>
-                  <div className="flex items-center gap-2 mb-1">
-                    <input
-                      type="text"
-                      value={wall2Name}
-                      onChange={(e) => setWall2Name(e.target.value)}
-                      className="text-xs text-gray-600 bg-transparent border-b border-gray-300 focus:border-blue-500 focus:outline-none w-full"
-                    />
-                  </div>
-                  <input
-                    type="number"
-                    value={wall2Height}
-                    onChange={(e) => setWall2Height(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    min="0"
-                    step="0.1"
-                  />
-                </div>
-              </div>
-            </div>
-
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Ridge Position Offset ({unitLabel})
@@ -272,15 +276,14 @@ export default function Home() {
                 step="0.1"
               />
               <p className="text-xs text-gray-500 mt-1">
-                Positive moves ridge toward {wall2Name}, negative toward{" "}
-                {wall1Name}
+                Positive = towards back wall, Negative = towards front wall
               </p>
               <input
                 type="range"
                 value={ridgeOffset}
                 onChange={(e) => setRidgeOffset(e.target.value)}
-                min={-parseFloat(span) / 2 || -12}
-                max={parseFloat(span) / 2 || 12}
+                min={-span / 2}
+                max={span / 2}
                 step="0.1"
                 className="w-full mt-2"
               />
@@ -294,14 +297,11 @@ export default function Home() {
             <div className="bg-gray-100 rounded-lg h-96 overflow-hidden">
               {mounted && result ? (
                 <RoofCanvas
-                  run={result.run}
-                  rise={result.rise}
-                  span={parseFloat(span)}
-                  ridgeOffset={parseFloat(ridgeOffset) || 0}
-                  wall1Height={parseFloat(wall1Height) || 8}
-                  wall2Height={parseFloat(wall2Height) || 8}
-                  wall1Angle={result.wall1Angle}
-                  wall2Angle={result.wall2Angle}
+                  walls={result.walls}
+                  roofSides={result.roofSides}
+                  ridge={result.ridge}
+                  span={span}
+                  width={width}
                   units={units}
                 />
               ) : (
@@ -317,31 +317,26 @@ export default function Home() {
               <div className="mt-6 space-y-3">
                 <div className="p-4 bg-blue-50 rounded-lg">
                   <p className="text-sm font-mono text-center text-gray-700">
-                    {t("canvas.pitch", {
-                      ratio: result.pitchRatio,
-                      angle: safeFormatAngle(result.pitchAngle),
-                    })}
+                    Base Pitch: {result.pitchRatio} (
+                    {safeFormatAngle(result.pitchAngle)}°)
                   </p>
                 </div>
 
-                {(parseFloat(ridgeOffset) !== 0 || hasDifferentWallHeights) && (
+                {result.roofSides.length > 0 && (
                   <div className="grid grid-cols-2 gap-3">
-                    <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                      <p className="text-xs text-yellow-800 font-medium mb-1">
-                        {wall1Name} Slope
-                      </p>
-                      <p className="text-lg font-bold text-yellow-900">
-                        {safeFormatAngle(result.wall1Angle)}°
-                      </p>
-                    </div>
-                    <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                      <p className="text-xs text-yellow-800 font-medium mb-1">
-                        {wall2Name} Slope
-                      </p>
-                      <p className="text-lg font-bold text-yellow-900">
-                        {safeFormatAngle(result.wall2Angle)}°
-                      </p>
-                    </div>
+                    {result.roofSides.map((side) => (
+                      <div
+                        key={side.id}
+                        className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg"
+                      >
+                        <p className="text-xs text-yellow-800 font-medium mb-1">
+                          {side.name}
+                        </p>
+                        <p className="text-lg font-bold text-yellow-900">
+                          {safeFormatAngle(side.angle)}°
+                        </p>
+                      </div>
+                    ))}
                   </div>
                 )}
               </div>
@@ -357,10 +352,10 @@ export default function Home() {
               <div className="space-y-4">
                 <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
                   <p className="text-sm text-green-800 font-medium mb-1">
-                    {t("results.run.title")}
+                    Base Run (Half Span)
                   </p>
                   <p className="text-2xl font-bold text-green-900">
-                    {safeFormatDimension(result.run)} {unitLabel}
+                    {safeFormatDimension(result.baseRun)} {unitLabel}
                   </p>
                 </div>
 
@@ -369,13 +364,13 @@ export default function Home() {
                     Ridge Height
                   </p>
                   <p className="text-2xl font-bold text-blue-900">
-                    {safeFormatDimension(result.ridgeHeight)} {unitLabel}
+                    {safeFormatDimension(result.ridge.height)} {unitLabel}
                   </p>
                 </div>
 
                 <div className="p-4 bg-purple-50 border border-purple-200 rounded-lg">
                   <p className="text-sm text-purple-800 font-medium mb-1">
-                    {t("results.rafterLength.title")}
+                    Rafter Lengths
                   </p>
                   {parseFloat(ridgeOffset) === 0 && !hasDifferentWallHeights ? (
                     <p className="text-2xl font-bold text-purple-900">
@@ -384,27 +379,22 @@ export default function Home() {
                     </p>
                   ) : (
                     <div className="space-y-1">
-                      <p className="text-sm text-purple-900">
-                        {wall1Name}:{" "}
-                        <span className="font-bold">
-                          {safeFormatDimension(result.wall1RafterLength)}
-                        </span>{" "}
-                        {unitLabel}
-                      </p>
-                      <p className="text-sm text-purple-900">
-                        {wall2Name}:{" "}
-                        <span className="font-bold">
-                          {safeFormatDimension(result.wall2RafterLength)}
-                        </span>{" "}
-                        {unitLabel}
-                      </p>
+                      {result.roofSides.map((side) => (
+                        <p key={side.id} className="text-sm text-purple-900">
+                          {side.name}:{" "}
+                          <span className="font-bold">
+                            {safeFormatDimension(side.rafterLength)}
+                          </span>{" "}
+                          {unitLabel}
+                        </p>
+                      ))}
                     </div>
                   )}
                 </div>
 
                 <div className="p-4 bg-orange-50 border border-orange-200 rounded-lg">
                   <p className="text-sm text-orange-800 font-medium mb-1">
-                    {t("results.pitchAngle.title")}
+                    Slope Angles
                   </p>
                   {parseFloat(ridgeOffset) === 0 && !hasDifferentWallHeights ? (
                     <p className="text-2xl font-bold text-orange-900">
@@ -412,54 +402,56 @@ export default function Home() {
                     </p>
                   ) : (
                     <div className="space-y-1">
-                      <p className="text-sm text-orange-900">
-                        {wall1Name}:{" "}
-                        <span className="font-bold">
-                          {safeFormatAngle(result.wall1Angle)}°
-                        </span>
-                      </p>
-                      <p className="text-sm text-orange-900">
-                        {wall2Name}:{" "}
-                        <span className="font-bold">
-                          {safeFormatAngle(result.wall2Angle)}°
-                        </span>
-                      </p>
+                      {result.roofSides.map((side) => (
+                        <p key={side.id} className="text-sm text-orange-900">
+                          {side.name}:{" "}
+                          <span className="font-bold">
+                            {safeFormatAngle(side.angle)}°
+                          </span>
+                        </p>
+                      ))}
                     </div>
                   )}
                 </div>
 
-                <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg">
-                  <p className="text-sm text-gray-800 font-medium mb-1">
-                    {t("results.pitchRatio.title")}
+                <div className="p-4 bg-indigo-50 border border-indigo-200 rounded-lg">
+                  <p className="text-sm text-indigo-800 font-medium mb-1">
+                    Horizontal Runs
                   </p>
-                  <p className="text-2xl font-bold text-gray-900">
-                    {result.pitchRatio}
-                  </p>
+                  <div className="space-y-1">
+                    {result.roofSides.map((side) => (
+                      <p key={side.id} className="text-sm text-indigo-900">
+                        {side.name}:{" "}
+                        <span className="font-bold">
+                          {safeFormatDimension(side.horizontalRun)}
+                        </span>{" "}
+                        {unitLabel}
+                      </p>
+                    ))}
+                  </div>
                 </div>
 
-                {(parseFloat(ridgeOffset) !== 0 || hasDifferentWallHeights) && (
-                  <div className="p-4 bg-indigo-50 border border-indigo-200 rounded-lg">
-                    <p className="text-sm text-indigo-800 font-medium mb-1">
-                      Horizontal Runs
+                <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg">
+                  <p className="text-sm text-gray-800 font-medium mb-1">
+                    Building Dimensions
+                  </p>
+                  <div className="space-y-1 text-sm text-gray-900">
+                    <p>
+                      Span:{" "}
+                      <span className="font-bold">
+                        {safeFormatDimension(span)}
+                      </span>{" "}
+                      {unitLabel}
                     </p>
-                    <div className="space-y-1">
-                      <p className="text-sm text-indigo-900">
-                        {wall1Name} to Ridge:{" "}
-                        <span className="font-bold">
-                          {safeFormatDimension(result.wall1Run)}
-                        </span>{" "}
-                        {unitLabel}
-                      </p>
-                      <p className="text-sm text-indigo-900">
-                        {wall2Name} to Ridge:{" "}
-                        <span className="font-bold">
-                          {safeFormatDimension(result.wall2Run)}
-                        </span>{" "}
-                        {unitLabel}
-                      </p>
-                    </div>
+                    <p>
+                      Width:{" "}
+                      <span className="font-bold">
+                        {safeFormatDimension(width)}
+                      </span>{" "}
+                      {unitLabel}
+                    </p>
                   </div>
-                )}
+                </div>
               </div>
             ) : (
               <div className="text-center py-12">

@@ -12,6 +12,7 @@ interface RoofCanvasProps {
   ridgeOffset?: number;
   leftWallHeight?: number;
   rightWallHeight?: number;
+  units?: "imperial" | "metric";
 }
 
 export const RoofCanvas: React.FC<RoofCanvasProps> = ({
@@ -21,7 +22,19 @@ export const RoofCanvas: React.FC<RoofCanvasProps> = ({
   ridgeOffset = 0,
   leftWallHeight = 8,
   rightWallHeight = 8,
+  units = "imperial",
 }) => {
+  // Normalize dimensions to imperial feet for consistent visualization
+  const normalizedSpan = units === "metric" ? span * 3.28084 : span;
+  const normalizedRun = units === "metric" ? run * 3.28084 : run;
+  const normalizedRise = units === "metric" ? rise * 3.28084 : rise;
+  const normalizedRidgeOffset =
+    units === "metric" ? ridgeOffset * 3.28084 : ridgeOffset;
+  const normalizedLeftWallHeight =
+    units === "metric" ? leftWallHeight * 3.28084 : leftWallHeight;
+  const normalizedRightWallHeight =
+    units === "metric" ? rightWallHeight * 3.28084 : rightWallHeight;
+
   return (
     <div className="w-full h-full" data-testid="roof-canvas">
       <Canvas>
@@ -33,12 +46,20 @@ export const RoofCanvas: React.FC<RoofCanvasProps> = ({
 
         <Suspense fallback={null}>
           <RoofGeometry
-            run={run}
-            rise={rise}
-            span={span}
-            ridgeOffset={ridgeOffset}
-            leftWallHeight={leftWallHeight}
-            rightWallHeight={rightWallHeight}
+            run={normalizedRun}
+            rise={normalizedRise}
+            span={normalizedSpan}
+            ridgeOffset={normalizedRidgeOffset}
+            leftWallHeight={normalizedLeftWallHeight}
+            rightWallHeight={normalizedRightWallHeight}
+            displayUnits={units}
+            originalValues={{
+              span,
+              ridgeOffset,
+              leftWallHeight,
+              rightWallHeight,
+              ridgeHeight: (leftWallHeight + rightWallHeight) / 2 + rise,
+            }}
           />
           <Grid
             args={[10, 10]}

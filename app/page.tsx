@@ -309,6 +309,7 @@ export default function Home() {
                   ridgeOffset={parseFloat(ridgeOffset) || 0}
                   leftWallHeight={parseFloat(leftWallHeight) || 8}
                   rightWallHeight={parseFloat(rightWallHeight) || 8}
+                  units={units}
                 />
               ) : (
                 <div className="h-full flex items-center justify-center border-2 border-dashed border-gray-300">

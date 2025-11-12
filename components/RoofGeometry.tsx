@@ -9,6 +9,14 @@ export interface RoofGeometryProps {
   ridgeOffset?: number;
   leftWallHeight?: number;
   rightWallHeight?: number;
+  displayUnits?: "imperial" | "metric";
+  originalValues?: {
+    span: number;
+    ridgeOffset: number;
+    leftWallHeight: number;
+    rightWallHeight: number;
+    ridgeHeight: number;
+  };
 }
 
 export const RoofGeometry: React.FC<RoofGeometryProps> = ({
@@ -18,8 +26,10 @@ export const RoofGeometry: React.FC<RoofGeometryProps> = ({
   ridgeOffset = 0,
   leftWallHeight = 8,
   rightWallHeight = 8,
+  displayUnits = "imperial",
+  originalValues,
 }) => {
-  // Scale down for better visualization
+  // Scale down for better visualization (all values are normalized to imperial feet)
   const scale = 0.1;
   const scaledRun = run * scale;
   const scaledRise = rise * scale;
@@ -28,8 +38,7 @@ export const RoofGeometry: React.FC<RoofGeometryProps> = ({
   const scaledLeftWallHeight = leftWallHeight * scale;
   const scaledRightWallHeight = rightWallHeight * scale;
 
-  // Calculate the reference height (average or minimum wall height)
-  const minWallHeight = Math.min(scaledLeftWallHeight, scaledRightWallHeight);
+  // Calculate the reference height (average wall height)
   const avgWallHeight = (scaledLeftWallHeight + scaledRightWallHeight) / 2;
 
   // Define points for the roof structure
@@ -54,17 +63,30 @@ export const RoofGeometry: React.FC<RoofGeometryProps> = ({
   const rightBase = new THREE.Vector3(scaledSpan / 2, 0, 0);
 
   // Calculate angles for display based on actual geometry
-  const leftDeltaX = scaledSpan / 2 - scaledRidgeOffset;
-  const rightDeltaX = scaledSpan / 2 + scaledRidgeOffset;
+  const leftDeltaX = Math.abs(-scaledSpan / 2 - scaledRidgeOffset);
+  const rightDeltaX = Math.abs(scaledSpan / 2 - scaledRidgeOffset);
   const leftDeltaY = ridgeHeight - scaledLeftWallHeight;
   const rightDeltaY = ridgeHeight - scaledRightWallHeight;
 
-  const leftAngle = Math.atan(leftDeltaY / leftDeltaX) * (180 / Math.PI);
-  const rightAngle = Math.atan(rightDeltaY / rightDeltaX) * (180 / Math.PI);
+  const leftAngle =
+    leftDeltaX > 0 ? Math.atan(leftDeltaY / leftDeltaX) * (180 / Math.PI) : 90;
+  const rightAngle =
+    rightDeltaX > 0
+      ? Math.atan(rightDeltaY / rightDeltaX) * (180 / Math.PI)
+      : 90;
 
   // Check if walls have different heights
   const hasDifferentWallHeights =
     Math.abs(scaledLeftWallHeight - scaledRightWallHeight) > 0.001;
+
+  // Use original values for display if provided, otherwise calculate from normalized values
+  const displayValues = originalValues || {
+    span: span,
+    ridgeOffset: ridgeOffset,
+    leftWallHeight: leftWallHeight,
+    rightWallHeight: rightWallHeight,
+    ridgeHeight: (leftWallHeight + rightWallHeight) / 2 + rise,
+  };
 
   return (
     <group>
@@ -216,7 +238,7 @@ export const RoofGeometry: React.FC<RoofGeometryProps> = ({
         anchorX="center"
         anchorY="bottom"
       >
-        {(ridgeHeight / scale).toFixed(1)}
+        {displayValues.ridgeHeight.toFixed(1)}
       </Text>
 
       {/* Wall height indicators */}
@@ -229,7 +251,7 @@ export const RoofGeometry: React.FC<RoofGeometryProps> = ({
             anchorX="right"
             anchorY="middle"
           >
-            {leftWallHeight.toFixed(1)}
+            {displayValues.leftWallHeight.toFixed(1)}
           </Text>
 
           <Text
@@ -239,7 +261,7 @@ export const RoofGeometry: React.FC<RoofGeometryProps> = ({
             anchorX="left"
             anchorY="middle"
           >
-            {rightWallHeight.toFixed(1)}
+            {displayValues.rightWallHeight.toFixed(1)}
           </Text>
         </>
       )}
@@ -253,9 +275,9 @@ export const RoofGeometry: React.FC<RoofGeometryProps> = ({
           anchorX="center"
           anchorY="bottom"
         >
-          {ridgeOffset > 0
-            ? `+${ridgeOffset.toFixed(1)}`
-            : ridgeOffset.toFixed(1)}
+          {displayValues.ridgeOffset > 0
+            ? `+${displayValues.ridgeOffset.toFixed(1)}`
+            : displayValues.ridgeOffset.toFixed(1)}
         </Text>
       )}
     </group>

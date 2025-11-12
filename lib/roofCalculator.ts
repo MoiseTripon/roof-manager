@@ -70,11 +70,11 @@ export function useRoofCalculator(
   const avgWallHeight = (leftWallHeight + rightWallHeight) / 2;
   const ridgeHeight = avgWallHeight + riseInLargeUnits;
 
-  // Calculate runs for each side considering ridge offset
+  // Calculate horizontal runs for each side considering ridge offset
   const leftRun = baseRun - ridgeOffset;
   const rightRun = baseRun + ridgeOffset;
 
-  // Calculate actual rise from each wall to ridge
+  // Calculate actual vertical rise from each wall top to ridge
   const leftRise = ridgeHeight - leftWallHeight;
   const rightRise = ridgeHeight - rightWallHeight;
 
@@ -92,9 +92,13 @@ export function useRoofCalculator(
   // Calculate pitch angle (base pitch from input)
   const pitchAngle = (Math.atan(pitchRise / pitchRun) * 180) / Math.PI;
 
-  // Calculate individual slope angles based on actual geometry
-  const leftAngle = (Math.atan(leftRise / leftRun) * 180) / Math.PI;
-  const rightAngle = (Math.atan(rightRise / rightRun) * 180) / Math.PI;
+  // Calculate actual slope angles based on the real geometry
+  // These are the angles from horizontal at each wall top
+  const leftAngle =
+    leftRun > 0 ? (Math.atan(leftRise / leftRun) * 180) / Math.PI : 90; // vertical if run is 0
+
+  const rightAngle =
+    rightRun > 0 ? (Math.atan(rightRise / rightRun) * 180) / Math.PI : 90; // vertical if run is 0
 
   // Format pitch ratio
   const pitchRatio = `${pitchRise}/${pitchRun}`;

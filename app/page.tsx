@@ -235,7 +235,7 @@ export default function Home() {
 
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Ridge Offset ({unitLabel})
+                {t("inputs.ridgeOffset.label", { unit: unitLabel })}
               </label>
               <input
                 type="number"
@@ -245,7 +245,7 @@ export default function Home() {
                 step="0.1"
               />
               <p className="text-xs text-gray-500 mt-1">
-                Positive moves ridge right, negative moves left
+                {t("inputs.ridgeOffset.description")}
               </p>
               <input
                 type="range"
@@ -260,12 +260,12 @@ export default function Home() {
 
             <div className="mb-4 p-3 bg-gray-50 rounded-lg">
               <label className="block text-sm font-medium text-gray-700 mb-3">
-                Wall Heights ({unitLabel})
+                {t("inputs.wallHeights.label", { unit: unitLabel })}
               </label>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs text-gray-600 mb-1">
-                    Left Wall
+                    {t("inputs.wallHeights.leftWall")}
                   </label>
                   <input
                     type="number"
@@ -278,7 +278,7 @@ export default function Home() {
                 </div>
                 <div>
                   <label className="block text-xs text-gray-600 mb-1">
-                    Right Wall
+                    {t("inputs.wallHeights.rightWall")}
                   </label>
                   <input
                     type="number"
@@ -291,7 +291,7 @@ export default function Home() {
                 </div>
               </div>
               <p className="text-xs text-gray-500 mt-2">
-                Set different heights for asymmetric roofs (e.g., attic spaces)
+                {t("inputs.wallHeights.description")}
               </p>
             </div>
           </div>
@@ -350,7 +350,7 @@ export default function Home() {
                   <div className="grid grid-cols-2 gap-3">
                     <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
                       <p className="text-xs text-yellow-800 font-medium mb-1">
-                        Left Slope Angle
+                        {t("results.leftSlopeAngle")}
                       </p>
                       <p className="text-lg font-bold text-yellow-900">
                         {safeFormatAngle(result.leftAngle)}°
@@ -358,7 +358,7 @@ export default function Home() {
                     </div>
                     <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
                       <p className="text-xs text-yellow-800 font-medium mb-1">
-                        Right Slope Angle
+                        {t("results.rightSlopeAngle")}
                       </p>
                       <p className="text-lg font-bold text-yellow-900">
                         {safeFormatAngle(result.rightAngle)}°
@@ -370,7 +370,7 @@ export default function Home() {
                 {hasDifferentWallHeights && (
                   <div className="p-3 bg-indigo-50 border border-indigo-200 rounded-lg">
                     <p className="text-xs text-indigo-800 font-medium mb-1">
-                      Wall Height Difference
+                      {t("results.wallHeightDifference.title")}
                     </p>
                     <p className="text-lg font-bold text-indigo-900">
                       {safeFormatDimension(
@@ -409,7 +409,7 @@ export default function Home() {
                 <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
                   <p className="text-sm text-blue-800 font-medium mb-1">
                     {hasDifferentWallHeights
-                      ? "Ridge Height (from ground)"
+                      ? t("results.ridgeHeight.title")
                       : t("results.rise.title")}
                   </p>
                   <p className="text-2xl font-bold text-blue-900">
@@ -417,7 +417,7 @@ export default function Home() {
                   </p>
                   <p className="text-xs text-blue-700 mt-1">
                     {hasDifferentWallHeights
-                      ? "Total height from ground to ridge peak"
+                      ? t("results.ridgeHeight.description")
                       : t("results.rise.description")}
                   </p>
                 </div>
@@ -425,13 +425,13 @@ export default function Home() {
                 {hasDifferentWallHeights && (
                   <div className="p-4 bg-cyan-50 border border-cyan-200 rounded-lg">
                     <p className="text-sm text-cyan-800 font-medium mb-1">
-                      Roof Rise (from average wall)
+                      {t("results.roofRise.title")}
                     </p>
                     <p className="text-2xl font-bold text-cyan-900">
                       {safeFormatDimension(result.rise)} {unitLabel}
                     </p>
                     <p className="text-xs text-cyan-700 mt-1">
-                      Vertical rise based on pitch
+                      {t("results.roofRise.description")}
                     </p>
                   </div>
                 )}
@@ -448,14 +448,14 @@ export default function Home() {
                   ) : (
                     <div className="space-y-1">
                       <p className="text-sm text-purple-900">
-                        Left:{" "}
+                        {t("results.rafterLength.left")}:{" "}
                         <span className="font-bold">
                           {safeFormatDimension(result.leftRafterLength)}
                         </span>{" "}
                         {unitLabel}
                       </p>
                       <p className="text-sm text-purple-900">
-                        Right:{" "}
+                        {t("results.rafterLength.right")}:{" "}
                         <span className="font-bold">
                           {safeFormatDimension(result.rightRafterLength)}
                         </span>{" "}
@@ -479,13 +479,13 @@ export default function Home() {
                   ) : (
                     <div className="space-y-1">
                       <p className="text-sm text-orange-900">
-                        Left:{" "}
+                        {t("results.pitchAngle.left")}:{" "}
                         <span className="font-bold">
                           {safeFormatAngle(result.leftAngle)}°
                         </span>
                       </p>
                       <p className="text-sm text-orange-900">
-                        Right:{" "}
+                        {t("results.pitchAngle.right")}:{" "}
                         <span className="font-bold">
                           {safeFormatAngle(result.rightAngle)}°
                         </span>
@@ -512,13 +512,13 @@ export default function Home() {
                 {parseFloat(ridgeOffset) !== 0 && (
                   <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
                     <p className="text-sm text-red-800 font-medium mb-1">
-                      Ridge Offset
+                      {t("results.ridgeOffset.title")}
                     </p>
                     <p className="text-2xl font-bold text-red-900">
                       {safeFormatDimension(parseFloat(ridgeOffset))} {unitLabel}
                     </p>
                     <p className="text-xs text-red-700 mt-1">
-                      Distance from center
+                      {t("results.ridgeOffset.description")}
                     </p>
                   </div>
                 )}
@@ -526,18 +526,18 @@ export default function Home() {
                 {hasDifferentWallHeights && (
                   <div className="p-4 bg-indigo-50 border border-indigo-200 rounded-lg">
                     <p className="text-sm text-indigo-800 font-medium mb-1">
-                      Wall Heights
+                      {t("results.wallHeights.title")}
                     </p>
                     <div className="space-y-1">
                       <p className="text-sm text-indigo-900">
-                        Left:{" "}
+                        {t("results.wallHeights.left")}:{" "}
                         <span className="font-bold">
                           {safeFormatDimension(parseFloat(leftWallHeight))}
                         </span>{" "}
                         {unitLabel}
                       </p>
                       <p className="text-sm text-indigo-900">
-                        Right:{" "}
+                        {t("results.wallHeights.right")}:{" "}
                         <span className="font-bold">
                           {safeFormatDimension(parseFloat(rightWallHeight))}
                         </span>{" "}
@@ -545,7 +545,7 @@ export default function Home() {
                       </p>
                     </div>
                     <p className="text-xs text-indigo-700 mt-1">
-                      Different wall heights for asymmetric design
+                      {t("results.wallHeights.description")}
                     </p>
                   </div>
                 )}

@@ -29,6 +29,16 @@
       "placeholder": "Run",
       "description": "Horizontal run component (typically {{typical}})"
     },
+    "ridgeOffset": {
+      "label": "Ridge Offset ({{unit}})",
+      "description": "Positive moves ridge right, negative moves left"
+    },
+    "wallHeights": {
+      "label": "Wall Heights ({{unit}})",
+      "leftWall": "Left Wall",
+      "rightWall": "Right Wall",
+      "description": "Set different heights for asymmetric roofs (e.g., attic spaces)"
+    },
     "commonPitches": "Common Pitches:"
   },
   "results": {
@@ -40,18 +50,45 @@
       "title": "Rise",
       "description": "Vertical height from wall to ridge"
     },
+    "ridgeHeight": {
+      "title": "Ridge Height (from ground)",
+      "description": "Total height from ground to ridge peak"
+    },
+    "roofRise": {
+      "title": "Roof Rise (from average wall)",
+      "description": "Vertical rise based on pitch"
+    },
     "rafterLength": {
       "title": "Common Rafter Length",
-      "description": "Length from wall plate to ridge"
+      "description": "Length from wall plate to ridge",
+      "left": "Left",
+      "right": "Right"
     },
     "pitchAngle": {
       "title": "Pitch Angle",
-      "description": "Roof slope angle from horizontal"
+      "description": "Roof slope angle from horizontal",
+      "left": "Left",
+      "right": "Right"
     },
     "pitchRatio": {
       "title": "Pitch Ratio",
       "description": "Rise over run ratio"
     },
+    "ridgeOffset": {
+      "title": "Ridge Offset",
+      "description": "Distance from center"
+    },
+    "wallHeights": {
+      "title": "Wall Heights",
+      "left": "Left",
+      "right": "Right",
+      "description": "Different wall heights for asymmetric design"
+    },
+    "wallHeightDifference": {
+      "title": "Wall Height Difference"
+    },
+    "leftSlopeAngle": "Left Slope Angle",
+    "rightSlopeAngle": "Right Slope Angle",
     "noResults": "Enter valid dimensions to see results"
   },
   "canvas": {

@@ -1,33 +1,30 @@
 export type Units = "imperial" | "metric";
 
 export interface RoofCalculatorParams {
-  span: number; // in feet or meters
-  pitchRise: number; // rise in inches or cm
-  pitchRun: number; // run in inches or cm (typically 12 or 100)
+  span: number;
+  pitchRise: number;
+  pitchRun: number;
   units: Units;
-  ridgeOffset?: number; // horizontal offset of ridge from center (positive = right, negative = left)
-  leftWallHeight?: number; // height of left wall in feet or meters
-  rightWallHeight?: number; // height of right wall in feet or meters
+  ridgeOffset?: number; // positive = towards wall2, negative = towards wall1
+  wall1Height?: number; // formerly leftWallHeight
+  wall2Height?: number; // formerly rightWallHeight
 }
 
 export interface RoofCalculatorResult {
-  run: number; // horizontal distance from wall to ridge (center-based)
-  rise: number; // vertical distance from average wall top to ridge
-  ridgeHeight: number; // total height from ground to ridge
-  commonRafterLength: number; // length of rafter from wall to ridge (when symmetric)
-  leftRafterLength: number; // length of left rafter
-  rightRafterLength: number; // length of right rafter
-  pitchAngle: number; // angle in degrees (base pitch)
-  leftAngle: number; // angle of left slope in degrees
-  rightAngle: number; // angle of right slope in degrees
-  pitchRatio: string; // formatted pitch ratio
+  run: number;
+  rise: number;
+  ridgeHeight: number;
+  commonRafterLength: number;
+  wall1RafterLength: number; // formerly leftRafterLength
+  wall2RafterLength: number; // formerly rightRafterLength
+  pitchAngle: number;
+  wall1Angle: number; // formerly leftAngle
+  wall2Angle: number; // formerly rightAngle
+  pitchRatio: string;
+  wall1Run: number; // horizontal distance from wall1 to ridge
+  wall2Run: number; // horizontal distance from wall2 to ridge
 }
 
-/**
- * Calculate roof dimensions for a gable roof
- * @param params - Roof parameters including span and pitch
- * @returns Calculated roof dimensions
- */
 export function useRoofCalculator(
   params: RoofCalculatorParams
 ): RoofCalculatorResult {
@@ -37,11 +34,10 @@ export function useRoofCalculator(
     pitchRun,
     units,
     ridgeOffset = 0,
-    leftWallHeight = 8,
-    rightWallHeight = 8,
+    wall1Height = 8,
+    wall2Height = 8,
   } = params;
 
-  // Validate inputs
   if (span <= 0) {
     throw new Error("Span must be greater than 0");
   }
@@ -51,56 +47,49 @@ export function useRoofCalculator(
   if (pitchRun <= 0) {
     throw new Error("Pitch run must be greater than 0");
   }
-  if (leftWallHeight < 0 || rightWallHeight < 0) {
+  if (wall1Height < 0 || wall2Height < 0) {
     throw new Error("Wall heights must be non-negative");
   }
 
-  // Calculate base run (half of span)
   const baseRun = span / 2;
 
-  // Convert to same units for calculation
-  // For imperial: run is in feet, need to convert to inches to match pitch
-  // For metric: run is in meters, need to convert to cm to match pitch
   const conversionFactor = units === "imperial" ? 12 : 100;
   const runInSmallUnits = baseRun * conversionFactor;
   const riseInSmallUnits = (runInSmallUnits * pitchRise) / pitchRun;
   const riseInLargeUnits = riseInSmallUnits / conversionFactor;
 
-  // Calculate average wall height and ridge height
-  const avgWallHeight = (leftWallHeight + rightWallHeight) / 2;
+  const avgWallHeight = (wall1Height + wall2Height) / 2;
   const ridgeHeight = avgWallHeight + riseInLargeUnits;
 
-  // Calculate horizontal runs for each side considering ridge offset
-  const leftRun = baseRun - ridgeOffset;
-  const rightRun = baseRun + ridgeOffset;
+  // FIXED: Correct horizontal runs for each side
+  // ridgeOffset positive = ridge moves towards wall2 (right)
+  // This means wall1 side gets longer, wall2 side gets shorter
+  const wall1Run = baseRun + ridgeOffset;
+  const wall2Run = baseRun - ridgeOffset;
 
   // Calculate actual vertical rise from each wall top to ridge
-  const leftRise = ridgeHeight - leftWallHeight;
-  const rightRise = ridgeHeight - rightWallHeight;
+  const wall1Rise = ridgeHeight - wall1Height;
+  const wall2Rise = ridgeHeight - wall2Height;
 
-  // Calculate rafter lengths using Pythagorean theorem
-  const leftRafterLength = Math.sqrt(
-    Math.pow(leftRun, 2) + Math.pow(leftRise, 2)
+  // Calculate rafter lengths
+  const wall1RafterLength = Math.sqrt(
+    Math.pow(wall1Run, 2) + Math.pow(wall1Rise, 2)
   );
-  const rightRafterLength = Math.sqrt(
-    Math.pow(rightRun, 2) + Math.pow(rightRise, 2)
+  const wall2RafterLength = Math.sqrt(
+    Math.pow(wall2Run, 2) + Math.pow(wall2Rise, 2)
   );
   const commonRafterLength = Math.sqrt(
     Math.pow(baseRun, 2) + Math.pow(riseInLargeUnits, 2)
   );
 
-  // Calculate pitch angle (base pitch from input)
   const pitchAngle = (Math.atan(pitchRise / pitchRun) * 180) / Math.PI;
 
-  // Calculate actual slope angles based on the real geometry
-  // These are the angles from horizontal at each wall top
-  const leftAngle =
-    leftRun > 0 ? (Math.atan(leftRise / leftRun) * 180) / Math.PI : 90; // vertical if run is 0
+  // Calculate actual slope angles
+  const wall1Angle =
+    wall1Run > 0 ? (Math.atan(wall1Rise / wall1Run) * 180) / Math.PI : 90;
+  const wall2Angle =
+    wall2Run > 0 ? (Math.atan(wall2Rise / wall2Run) * 180) / Math.PI : 90;
 
-  const rightAngle =
-    rightRun > 0 ? (Math.atan(rightRise / rightRun) * 180) / Math.PI : 90; // vertical if run is 0
-
-  // Format pitch ratio
   const pitchRatio = `${pitchRise}/${pitchRun}`;
 
   return {
@@ -108,18 +97,17 @@ export function useRoofCalculator(
     rise: riseInLargeUnits,
     ridgeHeight,
     commonRafterLength,
-    leftRafterLength,
-    rightRafterLength,
+    wall1RafterLength,
+    wall2RafterLength,
     pitchAngle,
-    leftAngle,
-    rightAngle,
+    wall1Angle,
+    wall2Angle,
     pitchRatio,
+    wall1Run,
+    wall2Run,
   };
 }
 
-/**
- * Format number to fixed decimal places
- */
 export function formatDimension(value: number, decimals: number = 2): string {
   return value.toFixed(decimals);
 }

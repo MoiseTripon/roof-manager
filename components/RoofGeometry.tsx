@@ -7,15 +7,17 @@ export interface RoofGeometryProps {
   rise: number;
   span: number;
   ridgeOffset?: number;
-  leftWallHeight?: number;
-  rightWallHeight?: number;
+  wall1Height?: number;
+  wall2Height?: number;
   displayUnits?: "imperial" | "metric";
   originalValues?: {
     span: number;
     ridgeOffset: number;
-    leftWallHeight: number;
-    rightWallHeight: number;
+    wall1Height: number;
+    wall2Height: number;
     ridgeHeight: number;
+    wall1Angle: number;
+    wall2Angle: number;
   };
 }
 
@@ -24,91 +26,71 @@ export const RoofGeometry: React.FC<RoofGeometryProps> = ({
   rise,
   span,
   ridgeOffset = 0,
-  leftWallHeight = 8,
-  rightWallHeight = 8,
+  wall1Height = 8,
+  wall2Height = 8,
   displayUnits = "imperial",
   originalValues,
 }) => {
-  // Scale down for better visualization (all values are normalized to imperial feet)
   const scale = 0.1;
   const scaledRun = run * scale;
   const scaledRise = rise * scale;
   const scaledSpan = span * scale;
   const scaledRidgeOffset = ridgeOffset * scale;
-  const scaledLeftWallHeight = leftWallHeight * scale;
-  const scaledRightWallHeight = rightWallHeight * scale;
+  const scaledWall1Height = wall1Height * scale;
+  const scaledWall2Height = wall2Height * scale;
 
-  // Calculate the reference height (average wall height)
-  const avgWallHeight = (scaledLeftWallHeight + scaledRightWallHeight) / 2;
+  const avgWallHeight = (scaledWall1Height + scaledWall2Height) / 2;
 
-  // Define points for the roof structure
-  // Base points - walls are at the edges of the span
-  const leftWallTop = new THREE.Vector3(
-    -scaledSpan / 2,
-    scaledLeftWallHeight,
-    0
-  );
-  const rightWallTop = new THREE.Vector3(
-    scaledSpan / 2,
-    scaledRightWallHeight,
-    0
-  );
+  // Wall positions
+  const wall1Top = new THREE.Vector3(-scaledSpan / 2, scaledWall1Height, 0);
+  const wall2Top = new THREE.Vector3(scaledSpan / 2, scaledWall2Height, 0);
 
-  // Ridge position - offset from center, height calculated from average wall height
+  // Ridge position
   const ridgeHeight = avgWallHeight + scaledRise;
   const ridge = new THREE.Vector3(scaledRidgeOffset, ridgeHeight, 0);
 
-  // Ground level points
-  const leftBase = new THREE.Vector3(-scaledSpan / 2, 0, 0);
-  const rightBase = new THREE.Vector3(scaledSpan / 2, 0, 0);
+  // Ground points
+  const wall1Base = new THREE.Vector3(-scaledSpan / 2, 0, 0);
+  const wall2Base = new THREE.Vector3(scaledSpan / 2, 0, 0);
 
-  // Calculate angles for display based on actual geometry
-  const leftDeltaX = Math.abs(-scaledSpan / 2 - scaledRidgeOffset);
-  const rightDeltaX = Math.abs(scaledSpan / 2 - scaledRidgeOffset);
-  const leftDeltaY = ridgeHeight - scaledLeftWallHeight;
-  const rightDeltaY = ridgeHeight - scaledRightWallHeight;
+  // Use pre-calculated angles from originalValues if available
+  const wall1Angle = originalValues?.wall1Angle ?? 0;
+  const wall2Angle = originalValues?.wall2Angle ?? 0;
 
-  const leftAngle =
-    leftDeltaX > 0 ? Math.atan(leftDeltaY / leftDeltaX) * (180 / Math.PI) : 90;
-  const rightAngle =
-    rightDeltaX > 0
-      ? Math.atan(rightDeltaY / rightDeltaX) * (180 / Math.PI)
-      : 90;
-
-  // Check if walls have different heights
   const hasDifferentWallHeights =
-    Math.abs(scaledLeftWallHeight - scaledRightWallHeight) > 0.001;
+    Math.abs(scaledWall1Height - scaledWall2Height) > 0.001;
 
-  // Use original values for display if provided, otherwise calculate from normalized values
   const displayValues = originalValues || {
-    span: span,
-    ridgeOffset: ridgeOffset,
-    leftWallHeight: leftWallHeight,
-    rightWallHeight: rightWallHeight,
-    ridgeHeight: (leftWallHeight + rightWallHeight) / 2 + rise,
+    span,
+    ridgeOffset,
+    wall1Height,
+    wall2Height,
+    ridgeHeight: (wall1Height + wall2Height) / 2 + rise,
+    wall1Angle: 0,
+    wall2Angle: 0,
   };
 
   return (
     <group>
-      {/* Left Rafter */}
+      {/* Wall1 Rafter */}
       <Line
-        points={[leftWallTop, ridge]}
+        points={[wall1Top, ridge]}
         color="#ef4444"
         lineWidth={3}
-        data-testid="left-rafter"
+        data-testid="wall1-rafter"
       />
 
-      {/* Right Rafter */}
+      {/* Wall2 Rafter */}
       <Line
-        points={[rightWallTop, ridge]}
+        points={[wall2Top, ridge]}
         color="#ef4444"
         lineWidth={3}
-        data-testid="right-rafter"
+        data-testid="wall2-rafter"
       />
 
-      {/* Ceiling Joist / Connection between wall tops */}
+      {/* Ceiling Joist */}
       <Line
-        points={[leftWallTop, rightWallTop]}
+        points={[wall1Top, wall2Top]}
         color="#3b82f6"
         lineWidth={2}
         dashed
@@ -117,23 +99,23 @@ export const RoofGeometry: React.FC<RoofGeometryProps> = ({
         data-testid="span-line"
       />
 
-      {/* Left Wall */}
+      {/* Wall1 */}
       <Line
-        points={[leftBase, leftWallTop]}
+        points={[wall1Base, wall1Top]}
         color="#6b7280"
         lineWidth={3}
-        data-testid="left-wall"
+        data-testid="wall1"
       />
 
-      {/* Right Wall */}
+      {/* Wall2 */}
       <Line
-        points={[rightBase, rightWallTop]}
+        points={[wall2Base, wall2Top]}
         color="#6b7280"
         lineWidth={3}
-        data-testid="right-wall"
+        data-testid="wall2"
       />
 
-      {/* Ridge Line (visual enhancement) */}
+      {/* Ridge Line */}
       <Line
         points={[
           new THREE.Vector3(scaledRidgeOffset, ridgeHeight, -0.5),
@@ -146,13 +128,13 @@ export const RoofGeometry: React.FC<RoofGeometryProps> = ({
 
       {/* Ground Line */}
       <Line
-        points={[leftBase, rightBase]}
+        points={[wall1Base, wall2Base]}
         color="#6b7280"
         lineWidth={1}
         data-testid="ground-line"
       />
 
-      {/* Vertical line from ridge to ground (to show height) */}
+      {/* Ridge vertical line */}
       <Line
         points={[new THREE.Vector3(scaledRidgeOffset, 0, 0), ridge]}
         color="#f59e0b"
@@ -163,7 +145,7 @@ export const RoofGeometry: React.FC<RoofGeometryProps> = ({
         data-testid="ridge-vertical"
       />
 
-      {/* Center line (reference) */}
+      {/* Center reference line */}
       {(ridgeOffset !== 0 || hasDifferentWallHeights) && (
         <Line
           points={[
@@ -179,7 +161,7 @@ export const RoofGeometry: React.FC<RoofGeometryProps> = ({
         />
       )}
 
-      {/* Horizontal reference at average wall height */}
+      {/* Average wall height reference */}
       {hasDifferentWallHeights && (
         <Line
           points={[
@@ -195,14 +177,13 @@ export const RoofGeometry: React.FC<RoofGeometryProps> = ({
         />
       )}
 
-      {/* Angle indicators */}
+      {/* Angle indicators - using calculated values from parent */}
       {(ridgeOffset !== 0 || hasDifferentWallHeights) && (
         <>
-          {/* Left angle text */}
           <Text
             position={[
-              -scaledSpan / 4,
-              scaledLeftWallHeight + leftDeltaY / 2,
+              (-scaledSpan / 2 + scaledRidgeOffset) / 2,
+              (scaledWall1Height + ridgeHeight) / 2,
               0.3,
             ]}
             fontSize={0.15}
@@ -210,14 +191,13 @@ export const RoofGeometry: React.FC<RoofGeometryProps> = ({
             anchorX="center"
             anchorY="middle"
           >
-            {leftAngle.toFixed(1)}°
+            {wall1Angle.toFixed(1)}°
           </Text>
 
-          {/* Right angle text */}
           <Text
             position={[
-              scaledSpan / 4,
-              scaledRightWallHeight + rightDeltaY / 2,
+              (scaledSpan / 2 + scaledRidgeOffset) / 2,
+              (scaledWall2Height + ridgeHeight) / 2,
               0.3,
             ]}
             fontSize={0.15}
@@ -225,7 +205,7 @@ export const RoofGeometry: React.FC<RoofGeometryProps> = ({
             anchorX="center"
             anchorY="middle"
           >
-            {rightAngle.toFixed(1)}°
+            {wall2Angle.toFixed(1)}°
           </Text>
         </>
       )}
@@ -245,28 +225,28 @@ export const RoofGeometry: React.FC<RoofGeometryProps> = ({
       {hasDifferentWallHeights && (
         <>
           <Text
-            position={[-scaledSpan / 2 - 0.4, scaledLeftWallHeight / 2, 0]}
+            position={[-scaledSpan / 2 - 0.4, scaledWall1Height / 2, 0]}
             fontSize={0.1}
             color="#6b7280"
             anchorX="right"
             anchorY="middle"
           >
-            {displayValues.leftWallHeight.toFixed(1)}
+            {displayValues.wall1Height.toFixed(1)}
           </Text>
 
           <Text
-            position={[scaledSpan / 2 + 0.4, scaledRightWallHeight / 2, 0]}
+            position={[scaledSpan / 2 + 0.4, scaledWall2Height / 2, 0]}
             fontSize={0.1}
             color="#6b7280"
             anchorX="left"
             anchorY="middle"
           >
-            {displayValues.rightWallHeight.toFixed(1)}
+            {displayValues.wall2Height.toFixed(1)}
           </Text>
         </>
       )}
 
-      {/* Ridge offset indicator (only if offset) */}
+      {/* Ridge offset indicator */}
       {ridgeOffset !== 0 && (
         <Text
           position={[scaledRidgeOffset / 2, ridgeHeight + 0.5, 0]}

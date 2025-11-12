@@ -10,8 +10,10 @@ interface RoofCanvasProps {
   rise: number;
   span: number;
   ridgeOffset?: number;
-  leftWallHeight?: number;
-  rightWallHeight?: number;
+  wall1Height?: number;
+  wall2Height?: number;
+  wall1Angle?: number;
+  wall2Angle?: number;
   units?: "imperial" | "metric";
 }
 
@@ -20,20 +22,21 @@ export const RoofCanvas: React.FC<RoofCanvasProps> = ({
   rise,
   span,
   ridgeOffset = 0,
-  leftWallHeight = 8,
-  rightWallHeight = 8,
+  wall1Height = 8,
+  wall2Height = 8,
+  wall1Angle = 0,
+  wall2Angle = 0,
   units = "imperial",
 }) => {
-  // Normalize dimensions to imperial feet for consistent visualization
   const normalizedSpan = units === "metric" ? span * 3.28084 : span;
   const normalizedRun = units === "metric" ? run * 3.28084 : run;
   const normalizedRise = units === "metric" ? rise * 3.28084 : rise;
   const normalizedRidgeOffset =
     units === "metric" ? ridgeOffset * 3.28084 : ridgeOffset;
-  const normalizedLeftWallHeight =
-    units === "metric" ? leftWallHeight * 3.28084 : leftWallHeight;
-  const normalizedRightWallHeight =
-    units === "metric" ? rightWallHeight * 3.28084 : rightWallHeight;
+  const normalizedWall1Height =
+    units === "metric" ? wall1Height * 3.28084 : wall1Height;
+  const normalizedWall2Height =
+    units === "metric" ? wall2Height * 3.28084 : wall2Height;
 
   return (
     <div className="w-full h-full" data-testid="roof-canvas">
@@ -50,15 +53,17 @@ export const RoofCanvas: React.FC<RoofCanvasProps> = ({
             rise={normalizedRise}
             span={normalizedSpan}
             ridgeOffset={normalizedRidgeOffset}
-            leftWallHeight={normalizedLeftWallHeight}
-            rightWallHeight={normalizedRightWallHeight}
+            wall1Height={normalizedWall1Height}
+            wall2Height={normalizedWall2Height}
             displayUnits={units}
             originalValues={{
               span,
               ridgeOffset,
-              leftWallHeight,
-              rightWallHeight,
-              ridgeHeight: (leftWallHeight + rightWallHeight) / 2 + rise,
+              wall1Height,
+              wall2Height,
+              ridgeHeight: (wall1Height + wall2Height) / 2 + rise,
+              wall1Angle,
+              wall2Angle,
             }}
           />
           <Grid

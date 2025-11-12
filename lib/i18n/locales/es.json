@@ -1,68 +1,105 @@
 {
   "app": {
     "title": "Gestor de Techos",
-    "description": "Calcule las dimensiones del techo a dos aguas para constructores"
+    "description": "Calcula dimensiones de techos a dos aguas para constructores"
   },
   "sections": {
-    "inputs": "Entradas",
-    "visualization": "Visualización",
+    "inputs": "Datos",
+    "visualization": "Vista",
     "results": "Resultados"
   },
   "inputs": {
     "units": {
       "label": "Unidades",
-      "imperial": "Imperial",
-      "metric": "Métrico"
+      "imperial": "Imperiales",
+      "metric": "Métricas"
     },
     "span": {
-      "label": "Luz ({{unit}})",
-      "placeholder": "Ingrese luz en {{unit}}",
+      "label": "Ancho ({{unit}})",
+      "placeholder": "Ingresa el ancho en {{unit}}",
       "description": "Ancho total del edificio"
     },
     "pitchRise": {
-      "label": "Elevación de Pendiente ({{unit}})",
-      "placeholder": "Elevación",
-      "description": "Componente de elevación vertical de la pendiente"
+      "label": "Altura de la pendiente ({{unit}})",
+      "placeholder": "Altura",
+      "description": "Componente vertical de la pendiente"
     },
     "pitchRun": {
-      "label": "Carrera de Pendiente ({{unit}})",
-      "placeholder": "Carrera",
-      "description": "Componente de carrera horizontal (típicamente {{typical}})"
+      "label": "Base de la pendiente ({{unit}})",
+      "placeholder": "Base",
+      "description": "Distancia horizontal (típicamente {{typical}})"
     },
-    "commonPitches": "Pendientes Comunes:"
+    "ridgeOffset": {
+      "label": "Desplazamiento de cumbrera ({{unit}})",
+      "description": "Positivo mueve a la derecha, negativo a la izquierda"
+    },
+    "wallHeights": {
+      "label": "Altura de los muros ({{unit}})",
+      "leftWall": "Muro izquierdo",
+      "rightWall": "Muro derecho",
+      "description": "Define alturas distintas para techos asimétricos"
+    },
+    "commonPitches": "Pendientes comunes:"
   },
   "results": {
     "run": {
-      "title": "Carrera",
-      "description": "Distancia horizontal desde la pared hasta la cumbrera"
+      "title": "Base",
+      "description": "Distancia horizontal del muro a la cumbrera"
     },
     "rise": {
-      "title": "Elevación",
-      "description": "Altura vertical desde la pared hasta la cumbrera"
+      "title": "Altura",
+      "description": "Altura vertical del muro a la cumbrera"
+    },
+    "ridgeHeight": {
+      "title": "Altura de la cumbrera (desde el suelo)",
+      "description": "Altura total del suelo al pico del techo"
+    },
+    "roofRise": {
+      "title": "Elevación del techo (desde el muro promedio)",
+      "description": "Elevación vertical según la pendiente"
     },
     "rafterLength": {
-      "title": "Longitud de Viga Común",
-      "description": "Longitud desde la placa de pared hasta la cumbrera"
+      "title": "Largo del cabio",
+      "description": "Distancia del muro a la cumbrera",
+      "left": "Izquierda",
+      "right": "Derecha"
     },
     "pitchAngle": {
-      "title": "Ángulo de Pendiente",
-      "description": "Ángulo de inclinación del techo desde la horizontal"
+      "title": "Ángulo de inclinación",
+      "description": "Ángulo del techo desde la horizontal",
+      "left": "Izquierda",
+      "right": "Derecha"
     },
     "pitchRatio": {
-      "title": "Proporción de Pendiente",
-      "description": "Proporción de elevación sobre carrera"
+      "title": "Relación de pendiente",
+      "description": "Altura sobre base"
     },
-    "noResults": "Ingrese dimensiones válidas para ver resultados"
+    "ridgeOffset": {
+      "title": "Desplazamiento de cumbrera",
+      "description": "Distancia desde el centro"
+    },
+    "wallHeights": {
+      "title": "Altura de los muros",
+      "left": "Izquierdo",
+      "right": "Derecho",
+      "description": "Muros con alturas distintas"
+    },
+    "wallHeightDifference": {
+      "title": "Diferencia de altura entre muros"
+    },
+    "leftSlopeAngle": "Ángulo pendiente izquierda",
+    "rightSlopeAngle": "Ángulo pendiente derecha",
+    "noResults": "Ingresa medidas válidas para ver resultados"
   },
   "canvas": {
-    "placeholder": "Marcador de posición del lienzo",
-    "description": "La visualización del techo irá aquí",
+    "placeholder": "Vista previa",
+    "description": "La vista del techo aparecerá aquí",
     "pitch": "Pendiente: {{ratio}} ({{angle}}°)"
   },
   "units": {
-    "feet": "pies",
+    "feet": "ft",
     "meters": "m",
-    "inches": "pulg",
+    "inches": "in",
     "centimeters": "cm"
   }
 }

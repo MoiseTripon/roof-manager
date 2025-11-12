@@ -1,0 +1,105 @@
+{
+  "app": {
+    "title": "Manager Acoperiș",
+    "description": "Calculează dimensiunile acoperișului în două ape pentru constructori"
+  },
+  "sections": {
+    "inputs": "Date",
+    "visualization": "Vizualizare",
+    "results": "Rezultate"
+  },
+  "inputs": {
+    "units": {
+      "label": "Unități",
+      "imperial": "Imperiale",
+      "metric": "Metrice"
+    },
+    "span": {
+      "label": "Deschidere ({{unit}})",
+      "placeholder": "Introdu deschiderea în {{unit}}",
+      "description": "Lățimea totală a clădirii"
+    },
+    "pitchRise": {
+      "label": "Înălțimea pantei ({{unit}})",
+      "placeholder": "Înălțime",
+      "description": "Componenta verticală a pantei"
+    },
+    "pitchRun": {
+      "label": "Baza pantei ({{unit}})",
+      "placeholder": "Bază",
+      "description": "Distanța orizontală (de obicei {{typical}})"
+    },
+    "ridgeOffset": {
+      "label": "Decalaj coamă ({{unit}})",
+      "description": "Pozitiv mută la dreapta, negativ la stânga"
+    },
+    "wallHeights": {
+      "label": "Înălțimea pereților ({{unit}})",
+      "leftWall": "Perete stânga",
+      "rightWall": "Perete dreapta",
+      "description": "Setează înălțimi diferite pentru acoperiș asimetric"
+    },
+    "commonPitches": "Pante comune:"
+  },
+  "results": {
+    "run": {
+      "title": "Bază",
+      "description": "Distanța orizontală din perete la coamă"
+    },
+    "rise": {
+      "title": "Înălțime",
+      "description": "Înălțimea verticală din perete la coamă"
+    },
+    "ridgeHeight": {
+      "title": "Înălțime coamă (de la sol)",
+      "description": "Înălțimea totală din sol până la vârf"
+    },
+    "roofRise": {
+      "title": "Ridicare acoperiș (de la peretele mediu)",
+      "description": "Ridicare verticală pe baza pantei"
+    },
+    "rafterLength": {
+      "title": "Lungime căprior",
+      "description": "Distanța din perete până la coamă",
+      "left": "Stânga",
+      "right": "Dreapta"
+    },
+    "pitchAngle": {
+      "title": "Unghi pantă",
+      "description": "Unghiul pantei față de orizontală",
+      "left": "Stânga",
+      "right": "Dreapta"
+    },
+    "pitchRatio": {
+      "title": "Raport pantă",
+      "description": "Înălțime pe bază"
+    },
+    "ridgeOffset": {
+      "title": "Decalaj coamă",
+      "description": "Distanța față de centru"
+    },
+    "wallHeights": {
+      "title": "Înălțime pereți",
+      "left": "Stânga",
+      "right": "Dreapta",
+      "description": "Pereți cu înălțimi diferite"
+    },
+    "wallHeightDifference": {
+      "title": "Diferență înălțime pereți"
+    },
+    "leftSlopeAngle": "Unghi pantă stânga",
+    "rightSlopeAngle": "Unghi pantă dreapta",
+    "noResults": "Introdu valori valide pentru rezultate"
+  },
+  "canvas": {
+    "placeholder": "Previzualizare",
+    "description": "Vizualizarea acoperișului va apărea aici",
+    "pitch": "Pantă: {{ratio}} ({{angle}}°)"
+  },
+  "units": {
+    "feet": "ft",
+    "meters": "m",
+    "inches": "in",
+    "centimeters": "cm"
+  }
+}

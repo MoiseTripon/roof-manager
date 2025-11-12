@@ -10,6 +10,8 @@ interface RoofCanvasProps {
   rise: number;
   span: number;
   ridgeOffset?: number;
+  leftWallHeight?: number;
+  rightWallHeight?: number;
 }
 
 export const RoofCanvas: React.FC<RoofCanvasProps> = ({
@@ -17,6 +19,8 @@ export const RoofCanvas: React.FC<RoofCanvasProps> = ({
   rise,
   span,
   ridgeOffset = 0,
+  leftWallHeight = 8,
+  rightWallHeight = 8,
 }) => {
   return (
     <div className="w-full h-full" data-testid="roof-canvas">
@@ -33,6 +37,8 @@ export const RoofCanvas: React.FC<RoofCanvasProps> = ({
             rise={rise}
             span={span}
             ridgeOffset={ridgeOffset}
+            leftWallHeight={leftWallHeight}
+            rightWallHeight={rightWallHeight}
           />
           <Grid
             args={[10, 10]}

@@ -6,11 +6,14 @@ export interface RoofCalculatorParams {
   pitchRun: number; // run in inches or cm (typically 12 or 100)
   units: Units;
   ridgeOffset?: number; // horizontal offset of ridge from center (positive = right, negative = left)
+  leftWallHeight?: number; // height of left wall in feet or meters
+  rightWallHeight?: number; // height of right wall in feet or meters
 }
 
 export interface RoofCalculatorResult {
   run: number; // horizontal distance from wall to ridge (center-based)
-  rise: number; // vertical distance from wall top to ridge
+  rise: number; // vertical distance from average wall top to ridge
+  ridgeHeight: number; // total height from ground to ridge
   commonRafterLength: number; // length of rafter from wall to ridge (when symmetric)
   leftRafterLength: number; // length of left rafter
   rightRafterLength: number; // length of right rafter
@@ -28,7 +31,15 @@ export interface RoofCalculatorResult {
 export function useRoofCalculator(
   params: RoofCalculatorParams
 ): RoofCalculatorResult {
-  const { span, pitchRise, pitchRun, units, ridgeOffset = 0 } = params;
+  const {
+    span,
+    pitchRise,
+    pitchRun,
+    units,
+    ridgeOffset = 0,
+    leftWallHeight = 8,
+    rightWallHeight = 8,
+  } = params;
 
   // Validate inputs
   if (span <= 0) {
@@ -39,6 +50,9 @@ export function useRoofCalculator(
   }
   if (pitchRun <= 0) {
     throw new Error("Pitch run must be greater than 0");
+  }
+  if (leftWallHeight < 0 || rightWallHeight < 0) {
+    throw new Error("Wall heights must be non-negative");
   }
 
   // Calculate base run (half of span)
@@ -52,27 +66,35 @@ export function useRoofCalculator(
   const riseInSmallUnits = (runInSmallUnits * pitchRise) / pitchRun;
   const riseInLargeUnits = riseInSmallUnits / conversionFactor;
 
+  // Calculate average wall height and ridge height
+  const avgWallHeight = (leftWallHeight + rightWallHeight) / 2;
+  const ridgeHeight = avgWallHeight + riseInLargeUnits;
+
   // Calculate runs for each side considering ridge offset
   const leftRun = baseRun - ridgeOffset;
   const rightRun = baseRun + ridgeOffset;
 
+  // Calculate actual rise from each wall to ridge
+  const leftRise = ridgeHeight - leftWallHeight;
+  const rightRise = ridgeHeight - rightWallHeight;
+
   // Calculate rafter lengths using Pythagorean theorem
   const leftRafterLength = Math.sqrt(
-    Math.pow(leftRun, 2) + Math.pow(riseInLargeUnits, 2)
+    Math.pow(leftRun, 2) + Math.pow(leftRise, 2)
   );
   const rightRafterLength = Math.sqrt(
-    Math.pow(rightRun, 2) + Math.pow(riseInLargeUnits, 2)
+    Math.pow(rightRun, 2) + Math.pow(rightRise, 2)
   );
   const commonRafterLength = Math.sqrt(
     Math.pow(baseRun, 2) + Math.pow(riseInLargeUnits, 2)
   );
 
-  // Calculate pitch angles
+  // Calculate pitch angle (base pitch from input)
   const pitchAngle = (Math.atan(pitchRise / pitchRun) * 180) / Math.PI;
 
   // Calculate individual slope angles based on actual geometry
-  const leftAngle = (Math.atan(riseInLargeUnits / leftRun) * 180) / Math.PI;
-  const rightAngle = (Math.atan(riseInLargeUnits / rightRun) * 180) / Math.PI;
+  const leftAngle = (Math.atan(leftRise / leftRun) * 180) / Math.PI;
+  const rightAngle = (Math.atan(rightRise / rightRun) * 180) / Math.PI;
 
   // Format pitch ratio
   const pitchRatio = `${pitchRise}/${pitchRun}`;
@@ -80,6 +102,7 @@ export function useRoofCalculator(
   return {
     run: baseRun,
     rise: riseInLargeUnits,
+    ridgeHeight,
     commonRafterLength,
     leftRafterLength,
     rightRafterLength,

@@ -30,6 +30,8 @@ export default function Home() {
   const [pitchRun, setPitchRun] = useState<string>("12");
   const [units, setUnits] = useState<Units>("imperial");
   const [ridgeOffset, setRidgeOffset] = useState<string>("0");
+  const [leftWallHeight, setLeftWallHeight] = useState<string>("8");
+  const [rightWallHeight, setRightWallHeight] = useState<string>("8");
 
   useEffect(() => {
     setMounted(true);
@@ -41,13 +43,17 @@ export default function Home() {
       const pitchRiseNum = parseFloat(pitchRise);
       const pitchRunNum = parseFloat(pitchRun);
       const ridgeOffsetNum = parseFloat(ridgeOffset) || 0;
+      const leftWallHeightNum = parseFloat(leftWallHeight) || 8;
+      const rightWallHeightNum = parseFloat(rightWallHeight) || 8;
 
       if (
         isNaN(spanNum) ||
         isNaN(pitchRiseNum) ||
         isNaN(pitchRunNum) ||
         spanNum <= 0 ||
-        pitchRunNum <= 0
+        pitchRunNum <= 0 ||
+        leftWallHeightNum < 0 ||
+        rightWallHeightNum < 0
       ) {
         return null;
       }
@@ -58,11 +64,21 @@ export default function Home() {
         pitchRun: pitchRunNum,
         units,
         ridgeOffset: ridgeOffsetNum,
+        leftWallHeight: leftWallHeightNum,
+        rightWallHeight: rightWallHeightNum,
       });
     } catch (error) {
       return null;
     }
-  }, [span, pitchRise, pitchRun, units, ridgeOffset]);
+  }, [
+    span,
+    pitchRise,
+    pitchRun,
+    units,
+    ridgeOffset,
+    leftWallHeight,
+    rightWallHeight,
+  ]);
 
   const unitLabel = t(units === "imperial" ? "units.feet" : "units.meters");
   const pitchUnitLabel = t(
@@ -87,6 +103,8 @@ export default function Home() {
     const pitchRiseNum = parseFloat(pitchRise);
     const pitchRunNum = parseFloat(pitchRun);
     const ridgeOffsetNum = parseFloat(ridgeOffset);
+    const leftWallHeightNum = parseFloat(leftWallHeight);
+    const rightWallHeightNum = parseFloat(rightWallHeight);
 
     if (newUnits === "metric" && units === "imperial") {
       setSpan((spanNum * 0.3048).toFixed(2));
@@ -94,16 +112,23 @@ export default function Home() {
       setPitchRun("100");
       setPitchRise((slopeRatio * 100).toFixed(1));
       setRidgeOffset((ridgeOffsetNum * 0.3048).toFixed(2));
+      setLeftWallHeight((leftWallHeightNum * 0.3048).toFixed(2));
+      setRightWallHeight((rightWallHeightNum * 0.3048).toFixed(2));
     } else if (newUnits === "imperial" && units === "metric") {
       setSpan((spanNum / 0.3048).toFixed(2));
       const slopeRatio = pitchRiseNum / pitchRunNum;
       setPitchRun("12");
       setPitchRise((slopeRatio * 12).toFixed(1));
       setRidgeOffset((ridgeOffsetNum / 0.3048).toFixed(2));
+      setLeftWallHeight((leftWallHeightNum / 0.3048).toFixed(2));
+      setRightWallHeight((rightWallHeightNum / 0.3048).toFixed(2));
     }
 
     setUnits(newUnits);
   };
+
+  const hasDifferentWallHeights =
+    parseFloat(leftWallHeight) !== parseFloat(rightWallHeight);
 
   return (
     <main className="min-h-screen bg-gray-50 p-8">
@@ -232,6 +257,43 @@ export default function Home() {
                 className="w-full mt-2"
               />
             </div>
+
+            <div className="mb-4 p-3 bg-gray-50 rounded-lg">
+              <label className="block text-sm font-medium text-gray-700 mb-3">
+                Wall Heights ({unitLabel})
+              </label>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs text-gray-600 mb-1">
+                    Left Wall
+                  </label>
+                  <input
+                    type="number"
+                    value={leftWallHeight}
+                    onChange={(e) => setLeftWallHeight(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    min="0"
+                    step="0.1"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-600 mb-1">
+                    Right Wall
+                  </label>
+                  <input
+                    type="number"
+                    value={rightWallHeight}
+                    onChange={(e) => setRightWallHeight(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    min="0"
+                    step="0.1"
+                  />
+                </div>
+              </div>
+              <p className="text-xs text-gray-500 mt-2">
+                Set different heights for asymmetric roofs (e.g., attic spaces)
+              </p>
+            </div>
           </div>
 
           <div className="bg-white rounded-lg shadow-md p-6">
@@ -245,6 +307,8 @@ export default function Home() {
                   rise={result.rise}
                   span={parseFloat(span)}
                   ridgeOffset={parseFloat(ridgeOffset) || 0}
+                  leftWallHeight={parseFloat(leftWallHeight) || 8}
+                  rightWallHeight={parseFloat(rightWallHeight) || 8}
                 />
               ) : (
                 <div className="h-full flex items-center justify-center border-2 border-dashed border-gray-300">
@@ -281,7 +345,7 @@ export default function Home() {
                   </p>
                 </div>
 
-                {parseFloat(ridgeOffset) !== 0 && (
+                {(parseFloat(ridgeOffset) !== 0 || hasDifferentWallHeights) && (
                   <div className="grid grid-cols-2 gap-3">
                     <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
                       <p className="text-xs text-yellow-800 font-medium mb-1">
@@ -299,6 +363,23 @@ export default function Home() {
                         {safeFormatAngle(result.rightAngle)}°
                       </p>
                     </div>
+                  </div>
+                )}
+
+                {hasDifferentWallHeights && (
+                  <div className="p-3 bg-indigo-50 border border-indigo-200 rounded-lg">
+                    <p className="text-xs text-indigo-800 font-medium mb-1">
+                      Wall Height Difference
+                    </p>
+                    <p className="text-lg font-bold text-indigo-900">
+                      {safeFormatDimension(
+                        Math.abs(
+                          parseFloat(leftWallHeight) -
+                            parseFloat(rightWallHeight)
+                        )
+                      )}{" "}
+                      {unitLabel}
+                    </p>
                   </div>
                 )}
               </div>
@@ -326,21 +407,39 @@ export default function Home() {
 
                 <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
                   <p className="text-sm text-blue-800 font-medium mb-1">
-                    {t("results.rise.title")}
+                    {hasDifferentWallHeights
+                      ? "Ridge Height (from ground)"
+                      : t("results.rise.title")}
                   </p>
                   <p className="text-2xl font-bold text-blue-900">
-                    {safeFormatDimension(result.rise)} {unitLabel}
+                    {safeFormatDimension(result.ridgeHeight)} {unitLabel}
                   </p>
                   <p className="text-xs text-blue-700 mt-1">
-                    {t("results.rise.description")}
+                    {hasDifferentWallHeights
+                      ? "Total height from ground to ridge peak"
+                      : t("results.rise.description")}
                   </p>
                 </div>
+
+                {hasDifferentWallHeights && (
+                  <div className="p-4 bg-cyan-50 border border-cyan-200 rounded-lg">
+                    <p className="text-sm text-cyan-800 font-medium mb-1">
+                      Roof Rise (from average wall)
+                    </p>
+                    <p className="text-2xl font-bold text-cyan-900">
+                      {safeFormatDimension(result.rise)} {unitLabel}
+                    </p>
+                    <p className="text-xs text-cyan-700 mt-1">
+                      Vertical rise based on pitch
+                    </p>
+                  </div>
+                )}
 
                 <div className="p-4 bg-purple-50 border border-purple-200 rounded-lg">
                   <p className="text-sm text-purple-800 font-medium mb-1">
                     {t("results.rafterLength.title")}
                   </p>
-                  {parseFloat(ridgeOffset) === 0 ? (
+                  {parseFloat(ridgeOffset) === 0 && !hasDifferentWallHeights ? (
                     <p className="text-2xl font-bold text-purple-900">
                       {safeFormatDimension(result.commonRafterLength)}{" "}
                       {unitLabel}
@@ -372,7 +471,7 @@ export default function Home() {
                   <p className="text-sm text-orange-800 font-medium mb-1">
                     {t("results.pitchAngle.title")}
                   </p>
-                  {parseFloat(ridgeOffset) === 0 ? (
+                  {parseFloat(ridgeOffset) === 0 && !hasDifferentWallHeights ? (
                     <p className="text-2xl font-bold text-orange-900">
                       {safeFormatAngle(result.pitchAngle)}°
                     </p>
@@ -419,6 +518,33 @@ export default function Home() {
                     </p>
                     <p className="text-xs text-red-700 mt-1">
                       Distance from center
+                    </p>
+                  </div>
+                )}
+
+                {hasDifferentWallHeights && (
+                  <div className="p-4 bg-indigo-50 border border-indigo-200 rounded-lg">
+                    <p className="text-sm text-indigo-800 font-medium mb-1">
+                      Wall Heights
+                    </p>
+                    <div className="space-y-1">
+                      <p className="text-sm text-indigo-900">
+                        Left:{" "}
+                        <span className="font-bold">
+                          {safeFormatDimension(parseFloat(leftWallHeight))}
+                        </span>{" "}
+                        {unitLabel}
+                      </p>
+                      <p className="text-sm text-indigo-900">
+                        Right:{" "}
+                        <span className="font-bold">
+                          {safeFormatDimension(parseFloat(rightWallHeight))}
+                        </span>{" "}
+                        {unitLabel}
+                      </p>
+                    </div>
+                    <p className="text-xs text-indigo-700 mt-1">
+                      Different wall heights for asymmetric design
                     </p>
                   </div>
                 )}

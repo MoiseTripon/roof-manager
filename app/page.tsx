@@ -3,10 +3,15 @@
 import { useState, useEffect, useMemo } from "react";
 import dynamic from "next/dynamic";
 import { useHouseData } from "@/hooks/useHouseData";
-import { VertexEditor } from "@/components/VertexEditor";
+import { ElementPropertyEditor } from "@/components/ElementPropertyEditor";
 import { calculateMeasurements } from "@/lib/measurementCalculator";
+import {
+  calculateElementProperties,
+  applyPropertyChanges,
+} from "@/lib/elementPropertiesCalculator";
 import houseData from "@/lib/data.json";
-import { HouseData } from "@/types/geometry";
+import { HouseData, ElementProperties } from "@/types/geometry";
+import { ChevronDown, Settings, Eye, EyeOff, Layers } from "lucide-react";
 
 const HouseCanvas = dynamic(
   () => import("@/components/HouseCanvas").then((mod) => mod.HouseCanvas),
@@ -24,6 +29,10 @@ export default function Home() {
   const [mounted, setMounted] = useState(false);
   const [units, setUnits] = useState<"imperial" | "metric">("imperial");
   const { data, setData, updateVertex } = useHouseData(houseData as HouseData);
+  const [selectedElementId, setSelectedElementId] = useState<string | null>(
+    null
+  );
+  const [showAdvanced, setShowAdvanced] = useState(false);
   const [showLabels, setShowLabels] = useState(true);
   const [showVertices, setShowVertices] = useState(false);
 
@@ -31,6 +40,30 @@ export default function Home() {
     setMounted(true);
   }, []);
 
+  // Calculate all element properties
+  const elements = useMemo(() => {
+    if (!data) return [];
+
+    const wallElements = data.walls.elements.map((wall) =>
+      calculateElementProperties(wall, "wall", data.vertices)
+    );
+
+    const roofElements = data.roof.elements.map((roof) =>
+      calculateElementProperties(roof, "roof", data.vertices)
+    );
+
+    return [...wallElements, ...roofElements];
+  }, [data]);
+
+  // Get selected element
+  const selectedElement = useMemo(() => {
+    if (!selectedElementId) return null;
+    return (
+      elements.find((el) => `${el.type}-${el.id}` === selectedElementId) || null
+    );
+  }, [selectedElementId, elements]);
+
+  // Calculate measurements
   const measurements = useMemo(() => {
     if (!data) return null;
     return calculateMeasurements(data);
@@ -41,7 +74,6 @@ export default function Home() {
 
     const conversionFactor = newUnits === "metric" ? 0.3048 : 1 / 0.3048;
 
-    // Convert all vertices
     const convertedVertices = data.vertices.map((v) => ({
       ...v,
       x: v.x * conversionFactor,
@@ -57,6 +89,22 @@ export default function Home() {
     setUnits(newUnits);
   };
 
+  const handlePropertyChange = (property: string, value: number) => {
+    if (!selectedElement || !data) return;
+
+    const updatedVertices = applyPropertyChanges(
+      selectedElement,
+      property,
+      value,
+      data.vertices
+    );
+
+    setData({
+      ...data,
+      vertices: updatedVertices,
+    });
+  };
+
   const unitLabel = units === "imperial" ? "ft" : "m";
   const areaUnitLabel = units === "imperial" ? "ft²" : "m²";
 
@@ -69,286 +117,401 @@ export default function Home() {
   };
 
   return (
-    <main className="min-h-screen bg-gray-50 p-8">
-      <div className="max-w-7xl mx-auto">
-        <div className="flex justify-between items-start mb-8">
-          <div>
-            <h1 className="text-4xl font-bold text-gray-900 mb-2">
-              House Builder 3D
-            </h1>
-            <p className="text-gray-600">
-              Interactive 3D house visualization and editor
-            </p>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Input Panel */}
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-2xl font-semibold text-gray-800 mb-6">
-              Structure Configuration
-            </h2>
-
-            {/* Units Toggle */}
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-3">
-                Units
-              </label>
-              <div className="flex gap-2">
+    <main className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <div className="bg-white shadow-sm border-b">
+        <div className="max-w-7xl mx-auto px-4 py-4">
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">
+                House Builder 3D
+              </h1>
+              <p className="text-sm text-gray-600">
+                Interactive 3D house visualization and editor
+              </p>
+            </div>
+            <div className="flex items-center gap-4">
+              {/* Units Toggle */}
+              <div className="flex gap-1 bg-gray-100 rounded-lg p-1">
                 <button
                   onClick={() => handleUnitsChange("imperial")}
-                  className={`flex-1 px-4 py-2 rounded-md font-medium transition-colors ${
+                  className={`px-3 py-1.5 text-sm rounded-md font-medium transition-colors ${
                     units === "imperial"
-                      ? "bg-blue-600 text-white"
-                      : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                      ? "bg-white text-blue-600 shadow-sm"
+                      : "text-gray-600 hover:text-gray-900"
                   }`}
-                  disabled={!mounted}
                 >
                   Imperial
                 </button>
                 <button
                   onClick={() => handleUnitsChange("metric")}
-                  className={`flex-1 px-4 py-2 rounded-md font-medium transition-colors ${
+                  className={`px-3 py-1.5 text-sm rounded-md font-medium transition-colors ${
                     units === "metric"
-                      ? "bg-blue-600 text-white"
-                      : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                      ? "bg-white text-blue-600 shadow-sm"
+                      : "text-gray-600 hover:text-gray-900"
                   }`}
-                  disabled={!mounted}
                 >
                   Metric
                 </button>
               </div>
+
+              {/* View Options */}
+              <div className="flex items-center gap-2 border-l pl-4">
+                <button
+                  onClick={() => setShowLabels(!showLabels)}
+                  className={`p-2 rounded-lg transition-colors ${
+                    showLabels
+                      ? "bg-blue-100 text-blue-600"
+                      : "text-gray-500 hover:bg-gray-100"
+                  }`}
+                  title="Toggle labels"
+                >
+                  <Layers className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => setShowVertices(!showVertices)}
+                  className={`p-2 rounded-lg transition-colors ${
+                    showVertices
+                      ? "bg-blue-100 text-blue-600"
+                      : "text-gray-500 hover:bg-gray-100"
+                  }`}
+                  title="Toggle vertices"
+                >
+                  {showVertices ? (
+                    <Eye className="w-4 h-4" />
+                  ) : (
+                    <EyeOff className="w-4 h-4" />
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex h-[calc(100vh-73px)]">
+        {/* Left Panel - Element Selector and Editor */}
+        <div className="w-80 bg-white border-r overflow-y-auto">
+          <div className="p-4">
+            <h2 className="text-lg font-semibold text-gray-800 mb-4">
+              Edit Structure
+            </h2>
+
+            {/* Element Dropdown */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Select Element
+              </label>
+              <div className="relative">
+                <select
+                  value={selectedElementId || ""}
+                  onChange={(e) => setSelectedElementId(e.target.value || null)}
+                  className="w-full px-3 py-2 pr-8 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none bg-white"
+                >
+                  <option value="">Choose an element...</option>
+                  <optgroup label="Walls">
+                    {elements
+                      .filter((el) => el.type === "wall")
+                      .map((wall) => (
+                        <option
+                          key={`wall-${wall.id}`}
+                          value={`wall-${wall.id}`}
+                        >
+                          {wall.name}
+                        </option>
+                      ))}
+                  </optgroup>
+                  <optgroup label="Roof Planes">
+                    {elements
+                      .filter((el) => el.type === "roof")
+                      .map((roof) => (
+                        <option
+                          key={`roof-${roof.id}`}
+                          value={`roof-${roof.id}`}
+                        >
+                          {roof.name}
+                        </option>
+                      ))}
+                  </optgroup>
+                </select>
+                <ChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
+              </div>
             </div>
 
-            {/* Vertex Editor */}
-            {data && (
-              <>
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Edit Structure
-                  </label>
-                  <VertexEditor
-                    data={data}
-                    onUpdateVertex={updateVertex}
-                    units={units}
-                  />
-                </div>
+            {/* Property Editor */}
+            <ElementPropertyEditor
+              element={selectedElement}
+              units={units}
+              onPropertyChange={handlePropertyChange}
+            />
 
-                {/* Display Options */}
-                <div className="border-t pt-4 space-y-3">
-                  <label className="block text-sm font-medium text-gray-700">
-                    Display Options
-                  </label>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      id="showLabels"
-                      checked={showLabels}
-                      onChange={(e) => setShowLabels(e.target.checked)}
-                      className="rounded"
-                    />
-                    <label
-                      htmlFor="showLabels"
-                      className="text-sm text-gray-700"
-                    >
-                      Show Labels
-                    </label>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      id="showVertices"
-                      checked={showVertices}
-                      onChange={(e) => setShowVertices(e.target.checked)}
-                      className="rounded"
-                    />
-                    <label
-                      htmlFor="showVertices"
-                      className="text-sm text-gray-700"
-                    >
-                      Show Vertex IDs
-                    </label>
-                  </div>
-                </div>
-              </>
-            )}
-          </div>
-
-          {/* Visualization Panel */}
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-2xl font-semibold text-gray-800 mb-6">
-              3D Visualization
-            </h2>
-            <div className="bg-gray-100 rounded-lg h-96 overflow-hidden">
-              {mounted && data ? (
-                <HouseCanvas
-                  data={data}
-                  scale={0.1}
-                  showLabels={showLabels}
-                  showVertices={showVertices}
+            {/* Advanced Mode Toggle */}
+            <div className="mt-6 pt-6 border-t">
+              <button
+                onClick={() => setShowAdvanced(!showAdvanced)}
+                className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900"
+              >
+                <Settings className="w-4 h-4" />
+                <span>Advanced Vertex Editor</span>
+                <ChevronDown
+                  className={`w-4 h-4 ml-auto transition-transform ${
+                    showAdvanced ? "rotate-180" : ""
+                  }`}
                 />
-              ) : (
-                <div className="h-full flex items-center justify-center border-2 border-dashed border-gray-300">
-                  <p className="text-sm text-gray-500">Loading 3D view...</p>
+              </button>
+
+              {showAdvanced && selectedElement && data && (
+                <div className="mt-4 p-3 bg-gray-50 rounded-lg">
+                  <p className="text-xs text-gray-600 mb-3">
+                    Direct vertex manipulation
+                  </p>
+                  <div className="space-y-2">
+                    {selectedElement.vertices.map((vId) => {
+                      const vertex = data.vertices.find((v) => v.id === vId);
+                      if (!vertex) return null;
+
+                      return (
+                        <div
+                          key={vId}
+                          className="grid grid-cols-4 gap-1 text-xs"
+                        >
+                          <div className="px-1 py-1 bg-white rounded border text-center">
+                            V{vId}
+                          </div>
+                          <input
+                            type="number"
+                            value={vertex.x.toFixed(2)}
+                            onChange={(e) =>
+                              updateVertex(vId, {
+                                x: parseFloat(e.target.value),
+                              })
+                            }
+                            className="px-1 py-1 border rounded text-center"
+                            step="0.1"
+                          />
+                          <input
+                            type="number"
+                            value={vertex.y.toFixed(2)}
+                            onChange={(e) =>
+                              updateVertex(vId, {
+                                y: parseFloat(e.target.value),
+                              })
+                            }
+                            className="px-1 py-1 border rounded text-center"
+                            step="0.1"
+                          />
+                          <input
+                            type="number"
+                            value={vertex.z.toFixed(2)}
+                            onChange={(e) =>
+                              updateVertex(vId, {
+                                z: parseFloat(e.target.value),
+                              })
+                            }
+                            className="px-1 py-1 border rounded text-center"
+                            step="0.1"
+                          />
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               )}
             </div>
-
-            {/* Quick Info */}
-            {measurements && mounted && (
-              <div className="mt-6 space-y-3">
-                <div className="p-4 bg-blue-50 rounded-lg">
-                  <p className="text-sm font-mono text-center text-gray-700">
-                    Roof Pitch: {measurements.roofPitch}/12 (
-                    {formatAngle(measurements.roofAngle)}°)
-                  </p>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                    <p className="text-xs text-yellow-800 font-medium mb-1">
-                      Max Height
-                    </p>
-                    <p className="text-lg font-bold text-yellow-900">
-                      {formatDimension(measurements.maxHeight)} {unitLabel}
-                    </p>
-                  </div>
-                  <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
-                    <p className="text-xs text-green-800 font-medium mb-1">
-                      Building Area
-                    </p>
-                    <p className="text-lg font-bold text-green-900">
-                      {formatDimension(measurements.span * measurements.width)}{" "}
-                      {areaUnitLabel}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
+        </div>
 
-          {/* Results Panel */}
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-2xl font-semibold text-gray-800 mb-6">
-              Measurements & Results
+        {/* Center - 3D Visualization */}
+        <div className="flex-1 bg-gray-100 relative">
+          {mounted && data ? (
+            <HouseCanvas
+              data={data}
+              scale={0.1}
+              showLabels={showLabels}
+              showVertices={showVertices}
+              highlightElement={selectedElement}
+            />
+          ) : (
+            <div className="h-full flex items-center justify-center">
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                <p className="text-sm text-gray-500">Loading 3D view...</p>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Right Panel - Measurements & Info */}
+        <div className="w-80 bg-white border-l overflow-y-auto">
+          <div className="p-4">
+            <h2 className="text-lg font-semibold text-gray-800 mb-4">
+              Building Information
             </h2>
 
             {measurements ? (
               <div className="space-y-4">
-                <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
-                  <p className="text-sm text-green-800 font-medium mb-1">
-                    Building Span
-                  </p>
-                  <p className="text-2xl font-bold text-green-900">
-                    {formatDimension(measurements.span)} {unitLabel}
-                  </p>
-                </div>
-
-                <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                  <p className="text-sm text-blue-800 font-medium mb-1">
-                    Building Width
-                  </p>
-                  <p className="text-2xl font-bold text-blue-900">
-                    {formatDimension(measurements.width)} {unitLabel}
-                  </p>
-                </div>
-
-                <div className="p-4 bg-purple-50 border border-purple-200 rounded-lg">
-                  <p className="text-sm text-purple-800 font-medium mb-1">
-                    Maximum Height
-                  </p>
-                  <p className="text-2xl font-bold text-purple-900">
-                    {formatDimension(measurements.maxHeight)} {unitLabel}
-                  </p>
-                </div>
-
-                <div className="p-4 bg-orange-50 border border-orange-200 rounded-lg">
-                  <p className="text-sm text-orange-800 font-medium mb-1">
-                    Roof Angle
-                  </p>
-                  <p className="text-2xl font-bold text-orange-900">
-                    {formatAngle(measurements.roofAngle)}°
-                  </p>
-                </div>
-
-                {/* Wall Areas */}
-                <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg">
-                  <p className="text-sm text-gray-800 font-medium mb-2">
-                    Wall Areas
-                  </p>
-                  <div className="space-y-1">
-                    {measurements.wallAreas.map((wall) => (
-                      <div
-                        key={wall.id}
-                        className="flex justify-between text-sm"
-                      >
-                        <span className="text-gray-600">{wall.name}:</span>
-                        <span className="font-medium text-gray-900">
-                          {formatDimension(wall.area)} {areaUnitLabel}
-                        </span>
-                      </div>
-                    ))}
+                {/* Primary Dimensions */}
+                <div className="bg-blue-50 rounded-lg p-4">
+                  <h3 className="text-sm font-semibold text-blue-900 mb-3">
+                    Primary Dimensions
+                  </h3>
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <span className="text-sm text-blue-700">Span:</span>
+                      <span className="text-sm font-medium text-blue-900">
+                        {formatDimension(measurements.span)} {unitLabel}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-blue-700">Width:</span>
+                      <span className="text-sm font-medium text-blue-900">
+                        {formatDimension(measurements.width)} {unitLabel}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-blue-700">Max Height:</span>
+                      <span className="text-sm font-medium text-blue-900">
+                        {formatDimension(measurements.maxHeight)} {unitLabel}
+                      </span>
+                    </div>
                   </div>
                 </div>
 
-                {/* Roof Areas */}
-                <div className="p-4 bg-indigo-50 border border-indigo-200 rounded-lg">
-                  <p className="text-sm text-indigo-800 font-medium mb-2">
-                    Roof Areas
-                  </p>
-                  <div className="space-y-1">
-                    {measurements.roofAreas.map((roof) => (
-                      <div
-                        key={roof.id}
-                        className="flex justify-between text-sm"
-                      >
-                        <span className="text-indigo-600">{roof.name}:</span>
-                        <span className="font-medium text-indigo-900">
-                          {formatDimension(roof.area)} {areaUnitLabel}
-                        </span>
-                      </div>
-                    ))}
+                {/* Roof Information */}
+                <div className="bg-orange-50 rounded-lg p-4">
+                  <h3 className="text-sm font-semibold text-orange-900 mb-3">
+                    Roof Information
+                  </h3>
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <span className="text-sm text-orange-700">
+                        Ridge Height:
+                      </span>
+                      <span className="text-sm font-medium text-orange-900">
+                        {formatDimension(measurements.ridgeHeight)} {unitLabel}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-orange-700">
+                        Roof Pitch:
+                      </span>
+                      <span className="text-sm font-medium text-orange-900">
+                        {measurements.roofPitch}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-orange-700">
+                        Roof Angle:
+                      </span>
+                      <span className="text-sm font-medium text-orange-900">
+                        {formatAngle(measurements.roofAngle)}°
+                      </span>
+                    </div>
                   </div>
                 </div>
 
-                {/* Total Summary */}
-                <div className="p-4 bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-lg">
-                  <p className="text-sm text-blue-800 font-medium mb-2">
-                    Summary
-                  </p>
-                  <div className="space-y-1 text-sm">
-                    <p className="text-gray-900">
-                      Total Wall Area:{" "}
-                      <span className="font-bold">
+                {/* Areas */}
+                <div className="bg-green-50 rounded-lg p-4">
+                  <h3 className="text-sm font-semibold text-green-900 mb-3">
+                    Surface Areas
+                  </h3>
+                  <div className="space-y-3">
+                    <div>
+                      <div className="flex justify-between mb-1">
+                        <span className="text-xs text-green-700">
+                          Total Wall Area:
+                        </span>
+                        <span className="text-sm font-bold text-green-900">
+                          {formatDimension(measurements.totalWallArea)}{" "}
+                          {areaUnitLabel}
+                        </span>
+                      </div>
+                      <div className="space-y-1">
+                        {measurements.wallAreas.map((wall) => (
+                          <div
+                            key={wall.id}
+                            className="flex justify-between text-xs"
+                          >
+                            <span className="text-green-600 ml-2">
+                              • {wall.name}:
+                            </span>
+                            <span className="text-green-700">
+                              {formatDimension(wall.area)} {areaUnitLabel}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="border-t pt-3">
+                      <div className="flex justify-between mb-1">
+                        <span className="text-xs text-green-700">
+                          Total Roof Area:
+                        </span>
+                        <span className="text-sm font-bold text-green-900">
+                          {formatDimension(measurements.totalRoofArea)}{" "}
+                          {areaUnitLabel}
+                        </span>
+                      </div>
+                      <div className="space-y-1">
+                        {measurements.roofAreas.map((roof) => (
+                          <div
+                            key={roof.id}
+                            className="flex justify-between text-xs"
+                          >
+                            <span className="text-green-600 ml-2">
+                              • {roof.name}:
+                            </span>
+                            <span className="text-green-700">
+                              {formatDimension(roof.area)} {areaUnitLabel}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Building Stats */}
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <h3 className="text-sm font-semibold text-gray-700 mb-3">
+                    Building Statistics
+                  </h3>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="text-center">
+                      <p className="text-2xl font-bold text-gray-900">
+                        {data?.walls.elements.length || 0}
+                      </p>
+                      <p className="text-xs text-gray-600">Walls</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-2xl font-bold text-gray-900">
+                        {data?.roof.elements.length || 0}
+                      </p>
+                      <p className="text-xs text-gray-600">Roof Planes</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-2xl font-bold text-gray-900">
+                        {data?.vertices.length || 0}
+                      </p>
+                      <p className="text-xs text-gray-600">Vertices</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-2xl font-bold text-gray-900">
                         {formatDimension(
-                          measurements.wallAreas.reduce(
-                            (sum, w) => sum + w.area,
-                            0
-                          )
-                        )}{" "}
-                        {areaUnitLabel}
-                      </span>
-                    </p>
-                    <p className="text-gray-900">
-                      Total Roof Area:{" "}
-                      <span className="font-bold">
-                        {formatDimension(
-                          measurements.roofAreas.reduce(
-                            (sum, r) => sum + r.area,
-                            0
-                          )
-                        )}{" "}
-                        {areaUnitLabel}
-                      </span>
-                    </p>
+                          measurements.span * measurements.width
+                        )}
+                      </p>
+                      <p className="text-xs text-gray-600">
+                        Floor {areaUnitLabel}
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>
             ) : (
               <div className="text-center py-12">
-                <p className="text-sm text-gray-500">
-                  No measurements available
-                </p>
+                <p className="text-sm text-gray-500">No data available</p>
               </div>
             )}
           </div>

@@ -4,13 +4,14 @@ import React, { Suspense, useMemo } from "react";
 import { Canvas } from "@react-three/fiber";
 import { OrbitControls, Grid, PerspectiveCamera } from "@react-three/drei";
 import { HouseGeometry3D } from "@/components/HouseGeometry3D";
-import { HouseData } from "@/types/geometry";
+import { ElementProperties, HouseData } from "@/types/geometry";
 
 interface HouseCanvasProps {
   data: HouseData;
   scale?: number;
   showLabels?: boolean;
   showVertices?: boolean;
+  highlightElement?: ElementProperties | null;
 }
 
 export const HouseCanvas: React.FC<HouseCanvasProps> = ({

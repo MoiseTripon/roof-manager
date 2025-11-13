@@ -21,3 +21,13 @@ export interface HouseData {
   walls: ElementGroup;
   roof: ElementGroup;
 }
+
+export interface MeasurementResult {
+  span: number;
+  width: number;
+  maxHeight: number;
+  roofPitch: number;
+  roofAngle: number;
+  wallAreas: { id: number; name: string; area: number }[];
+  roofAreas: { id: number; name: string; area: number }[];
+}

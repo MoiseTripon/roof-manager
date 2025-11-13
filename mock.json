@@ -1,0 +1,64 @@
+{
+  "vertices": [
+    { "id": 0, "x": 0, "y": 0, "z": 0 },
+    { "id": 1, "x": 10, "y": 0, "z": 0 },
+    { "id": 2, "x": 10, "y": 8, "z": 0 },
+    { "id": 3, "x": 0, "y": 8, "z": 0 },
+    { "id": 4, "x": 0, "y": 0, "z": 3 },
+    { "id": 5, "x": 10, "y": 0, "z": 3 },
+    { "id": 6, "x": 10, "y": 8, "z": 3 },
+    { "id": 7, "x": 0, "y": 8, "z": 3 },
+    { "id": 8, "x": 5, "y": 0, "z": 5 },
+    { "id": 9, "x": 5, "y": 8, "z": 5 }
+  ],
+  "walls": {
+    "contourColor": "#000000",
+    "elements": [
+      {
+        "id": 0,
+        "name": "wall1",
+        "vertices": [0, 1, 5, 4, 0]
+      },
+      {
+        "id": 1,
+        "name": "wall2",
+        "vertices": [1, 2, 6, 5, 1]
+      },
+      {
+        "id": 2,
+        "name": "wall3",
+        "vertices": [2, 3, 7, 6, 2]
+      },
+      {
+        "id": 3,
+        "name": "wall4",
+        "vertices": [3, 0, 4, 7, 3]
+      }
+    ]
+  },
+  "roof": {
+    "contourColor": "#FF0000",
+    "elements": [
+      {
+        "id": 0,
+        "name": "plane1",
+        "vertices": [4, 5, 8, 4]
+      },
+      {
+        "id": 1,
+        "name": "plane2",
+        "vertices": [5, 6, 9, 8, 5]
+      },
+      {
+        "id": 2,
+        "name": "plane3",
+        "vertices": [6, 7, 9, 6]
+      },
+      {
+        "id": 3,
+        "name": "plane4",
+        "vertices": [7, 4, 8, 9, 7]
+      }
+    ]
+  }
+}

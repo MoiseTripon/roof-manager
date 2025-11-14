@@ -1,6 +1,3 @@
-import i18n, { createInstance } from "i18next";
-import { initReactI18next } from "react-i18next";
-
 export const i18nConfig = {
   defaultLocale: "en",
   locales: ["en", "es", "ro"] as const,

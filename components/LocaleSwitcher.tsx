@@ -1,41 +1,38 @@
 "use client";
 
 import { i18nConfig, Locale } from "@/lib/i18n/config";
-import React from "react";
-import { useTranslation } from "react-i18next";
+import { useTranslation } from "@/lib/i18n/hooks";
+import { useRouter } from "next/navigation";
 
 export const LocaleSwitcher: React.FC = () => {
-  const { i18n } = useTranslation();
+  const { locale } = useTranslation();
+  const router = useRouter();
 
-  const handleLocaleChange = (locale: Locale) => {
+  const handleLocaleChange = (newLocale: Locale) => {
     // Set cookie for persistence
-    document.cookie = `preferred-locale=${locale};max-age=${
+    document.cookie = `NEXT_LOCALE=${newLocale};max-age=${
       365 * 24 * 60 * 60
     };path=/;samesite=lax`;
 
-    // Change language
-    i18n.changeLanguage(locale);
-
-    // Optional: Force router refresh to ensure all server components get updated
-    // This will cause a full page reload but ensures consistency
-    // window.location.reload();
+    // Force a router refresh to update server components
+    router.refresh();
   };
 
   return (
     <div className="flex gap-2">
-      {i18nConfig.locales.map((locale) => (
+      {i18nConfig.locales.map((loc) => (
         <button
-          key={locale}
-          onClick={() => handleLocaleChange(locale)}
+          key={loc}
+          onClick={() => handleLocaleChange(loc)}
           className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
-            i18n.language === locale
+            locale === loc
               ? "bg-blue-600 text-white"
               : "bg-gray-200 text-gray-700 hover:bg-gray-300"
           }`}
-          aria-label={`Switch to ${locale.toUpperCase()}`}
-          aria-current={i18n.language === locale ? "true" : "false"}
+          aria-label={`Switch to ${loc.toUpperCase()}`}
+          aria-current={locale === loc ? "true" : "false"}
         >
-          {locale.toUpperCase()}
+          {loc.toUpperCase()}
         </button>
       ))}
     </div>

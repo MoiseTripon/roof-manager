@@ -12,6 +12,7 @@ import {
 import houseData from "@/lib/data.json";
 import { HouseData, ElementProperties } from "@/types/geometry";
 import { ChevronDown, Settings, Eye, EyeOff, Layers } from "lucide-react";
+import { useTranslation } from "@/lib/i18n/hooks";
 
 const HouseCanvas = dynamic(
   () => import("@/components/HouseCanvas").then((mod) => mod.HouseCanvas),
@@ -26,6 +27,7 @@ const HouseCanvas = dynamic(
 );
 
 export default function Home() {
+  const { t } = useTranslation();
   const [mounted, setMounted] = useState(false);
   const [units, setUnits] = useState<"imperial" | "metric">("imperial");
   const { data, setData, updateVertex } = useHouseData(houseData as HouseData);
@@ -124,11 +126,9 @@ export default function Home() {
           <div className="flex justify-between items-center">
             <div>
               <h1 className="text-2xl font-bold text-gray-900">
-                House Builder 3D
+                {t("app.title")}
               </h1>
-              <p className="text-sm text-gray-600">
-                Interactive 3D house visualization and editor
-              </p>
+              <p className="text-sm text-gray-600">{t("app.description")}</p>
             </div>
             <div className="flex items-center gap-4">
               {/* Units Toggle */}

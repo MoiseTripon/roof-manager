@@ -1,8 +1,8 @@
-import { SupportedLocale } from "@/lib/i18n/config";
+import { Locale } from "@/lib/i18n/config";
 
 export function formatDimension(
   value: number,
-  locale: SupportedLocale,
+  locale: Locale,
   decimals: number = 2
 ): string {
   return new Intl.NumberFormat(locale === "es" ? "es-ES" : "en-US", {
@@ -14,7 +14,7 @@ export function formatDimension(
 
 export function formatAngle(
   value: number,
-  locale: SupportedLocale,
+  locale: Locale,
   decimals: number = 1
 ): string {
   return new Intl.NumberFormat(locale === "es" ? "es-ES" : "en-US", {

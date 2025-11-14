@@ -1,10 +1,12 @@
 "use client";
 
-import React, { Suspense, useMemo } from "react";
+import React, { Suspense, useMemo, useRef, useEffect } from "react";
 import { Canvas } from "@react-three/fiber";
 import { OrbitControls, Grid, PerspectiveCamera } from "@react-three/drei";
 import { HouseGeometry3D } from "@/components/HouseGeometry3D";
 import { ElementProperties, HouseData } from "@/types/geometry";
+import { OrbitControls as OrbitControlsImpl } from "three-stdlib";
+import { DragMode } from "@/types/interaction";
 
 interface HouseCanvasProps {
   data: HouseData;
@@ -17,6 +19,14 @@ interface HouseCanvasProps {
     vertexId: number,
     newPosition: { x: number; y: number; z: number }
   ) => void;
+  onMultiVertexDrag?: (
+    vertexUpdates: Array<{
+      id: number;
+      position: { x: number; y: number; z: number };
+    }>
+  ) => void;
+  dragMode?: DragMode;
+  onDragStateChange?: (isDragging: boolean) => void;
 }
 
 export const HouseCanvas: React.FC<HouseCanvasProps> = ({
@@ -27,7 +37,12 @@ export const HouseCanvas: React.FC<HouseCanvasProps> = ({
   highlightElement,
   onElementSelect,
   onVertexDrag,
+  onMultiVertexDrag,
+  dragMode = "vertex",
+  onDragStateChange,
 }) => {
+  const orbitControlsRef = useRef<OrbitControlsImpl>(null);
+
   // Calculate camera position based on data bounds
   const cameraPosition = useMemo(() => {
     const maxX = Math.max(...data.vertices.map((v) => v.x));
@@ -51,11 +66,26 @@ export const HouseCanvas: React.FC<HouseCanvasProps> = ({
     ];
   }, [data, scale]);
 
+  const handleDragStart = () => {
+    if (orbitControlsRef.current) {
+      orbitControlsRef.current.enabled = false;
+    }
+    onDragStateChange?.(true);
+  };
+
+  const handleDragEnd = () => {
+    if (orbitControlsRef.current) {
+      orbitControlsRef.current.enabled = true;
+    }
+    onDragStateChange?.(false);
+  };
+
   return (
     <div className="w-full h-full" data-testid="house-canvas">
       <Canvas>
         <PerspectiveCamera makeDefault position={cameraPosition} />
         <OrbitControls
+          ref={orbitControlsRef}
           enablePan={true}
           enableZoom={true}
           enableRotate={true}
@@ -75,6 +105,10 @@ export const HouseCanvas: React.FC<HouseCanvasProps> = ({
             highlightElement={highlightElement}
             onElementSelect={onElementSelect}
             onVertexDrag={onVertexDrag}
+            onMultiVertexDrag={onMultiVertexDrag}
+            dragMode={dragMode}
+            onDragStart={handleDragStart}
+            onDragEnd={handleDragEnd}
           />
           <Grid
             args={[20, 20]}

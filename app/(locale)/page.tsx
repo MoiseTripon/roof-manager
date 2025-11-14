@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import dynamic from "next/dynamic";
 import { useHouseData } from "@/hooks/useHouseData";
 import { ElementPropertyEditor } from "@/components/ElementPropertyEditor";
@@ -11,8 +11,18 @@ import {
 } from "@/lib/elementPropertiesCalculator";
 import houseData from "@/lib/data.json";
 import { HouseData, ElementProperties } from "@/types/geometry";
-import { ChevronDown, Settings, Eye, EyeOff, Layers } from "lucide-react";
+import {
+  ChevronDown,
+  Settings,
+  Eye,
+  EyeOff,
+  Layers,
+  Move,
+  MousePointer,
+  Maximize2,
+} from "lucide-react";
 import { useTranslation } from "@/lib/i18n/hooks";
+import { DragMode } from "@/types/interaction";
 
 const HouseCanvas = dynamic(
   () => import("@/components/HouseCanvas").then((mod) => mod.HouseCanvas),
@@ -37,6 +47,8 @@ export default function Home() {
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [showLabels, setShowLabels] = useState(true);
   const [showVertices, setShowVertices] = useState(false);
+  const [dragMode, setDragMode] = useState<DragMode>("vertex");
+  const [isDragging, setIsDragging] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -116,6 +128,32 @@ export default function Home() {
     newPosition: { x: number; y: number; z: number }
   ) => {
     updateVertex(vertexId, newPosition);
+  };
+
+  const handleMultiVertexDrag = (
+    vertexUpdates: Array<{
+      id: number;
+      position: { x: number; y: number; z: number };
+    }>
+  ) => {
+    if (!data) return;
+
+    const updatedVertices = data.vertices.map((v) => {
+      const update = vertexUpdates.find((u) => u.id === v.id);
+      if (update) {
+        return { ...v, ...update.position };
+      }
+      return v;
+    });
+
+    setData({
+      ...data,
+      vertices: updatedVertices,
+    });
+  };
+
+  const handleDragStateChange = (dragging: boolean) => {
+    setIsDragging(dragging);
   };
 
   const unitLabel = units === "imperial" ? "ft" : "m";
@@ -208,6 +246,51 @@ export default function Home() {
               Edit Structure
             </h2>
 
+            {/* Drag Mode Selector */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Drag Mode
+              </label>
+              <div className="flex gap-1 bg-gray-100 rounded-lg p-1">
+                <button
+                  onClick={() => setDragMode("vertex")}
+                  className={`flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-xs rounded-md font-medium transition-colors ${
+                    dragMode === "vertex"
+                      ? "bg-white text-blue-600 shadow-sm"
+                      : "text-gray-600 hover:text-gray-900"
+                  }`}
+                  title="Drag individual vertices"
+                >
+                  <MousePointer className="w-3 h-3" />
+                  Vertex
+                </button>
+                <button
+                  onClick={() => setDragMode("edge")}
+                  className={`flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-xs rounded-md font-medium transition-colors ${
+                    dragMode === "edge"
+                      ? "bg-white text-blue-600 shadow-sm"
+                      : "text-gray-600 hover:text-gray-900"
+                  }`}
+                  title="Drag edges (sides)"
+                >
+                  <Maximize2 className="w-3 h-3" />
+                  Edge
+                </button>
+                <button
+                  onClick={() => setDragMode("element")}
+                  className={`flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-xs rounded-md font-medium transition-colors ${
+                    dragMode === "element"
+                      ? "bg-white text-blue-600 shadow-sm"
+                      : "text-gray-600 hover:text-gray-900"
+                  }`}
+                  title="Drag entire elements"
+                >
+                  <Move className="w-3 h-3" />
+                  Element
+                </button>
+              </div>
+            </div>
+
             {/* Element Dropdown */}
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -254,8 +337,18 @@ export default function Home() {
               <p className="text-xs text-blue-700">
                 💡 <strong>Tip:</strong> Click on elements in the 3D view to
                 select them.
-                {showVertices && " Drag vertices to move them."}
+                {dragMode === "vertex" &&
+                  showVertices &&
+                  " Drag vertices to move them."}
+                {dragMode === "edge" && " Drag edges to resize elements."}
+                {dragMode === "element" &&
+                  " Drag elements to move them entirely."}
               </p>
+              {isDragging && (
+                <p className="text-xs text-orange-600 mt-2">
+                  🔒 Camera controls locked during drag
+                </p>
+              )}
             </div>
 
             {/* Property Editor */}
@@ -352,6 +445,9 @@ export default function Home() {
               highlightElement={selectedElement}
               onElementSelect={handleElementSelect}
               onVertexDrag={handleVertexDrag}
+              onMultiVertexDrag={handleMultiVertexDrag}
+              dragMode={dragMode}
+              onDragStateChange={handleDragStateChange}
             />
           ) : (
             <div className="h-full flex items-center justify-center">

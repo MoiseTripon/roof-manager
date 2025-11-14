@@ -1,13 +1,13 @@
 "use client";
 
+import { i18nConfig, Locale } from "@/lib/i18n/config";
 import React from "react";
 import { useTranslation } from "react-i18next";
-import { supportedLocales, SupportedLocale } from "@/lib/i18n/config";
 
 export const LocaleSwitcher: React.FC = () => {
   const { i18n } = useTranslation();
 
-  const handleLocaleChange = (locale: SupportedLocale) => {
+  const handleLocaleChange = (locale: Locale) => {
     // Set cookie for persistence
     document.cookie = `preferred-locale=${locale};max-age=${
       365 * 24 * 60 * 60
@@ -23,7 +23,7 @@ export const LocaleSwitcher: React.FC = () => {
 
   return (
     <div className="flex gap-2">
-      {supportedLocales.map((locale) => (
+      {i18nConfig.locales.map((locale) => (
         <button
           key={locale}
           onClick={() => handleLocaleChange(locale)}

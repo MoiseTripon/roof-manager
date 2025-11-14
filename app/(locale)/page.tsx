@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import dynamic from "next/dynamic";
 import { useHouseData } from "@/hooks/useHouseData";
 import { ElementPropertyEditor } from "@/components/ElementPropertyEditor";
@@ -20,9 +20,9 @@ import {
   Move,
   MousePointer,
   Maximize2,
+  Ruler,
 } from "lucide-react";
 import { useTranslation } from "@/lib/i18n/hooks";
-import { DragMode } from "@/types/interaction";
 
 const HouseCanvas = dynamic(
   () => import("@/components/HouseCanvas").then((mod) => mod.HouseCanvas),
@@ -36,6 +36,9 @@ const HouseCanvas = dynamic(
   }
 );
 
+export type DragMode = "vertex" | "element" | "edge";
+export type AxisLock = "x" | "y" | "z" | null;
+
 export default function Home() {
   const { t } = useTranslation();
   const [mounted, setMounted] = useState(false);
@@ -47,12 +50,40 @@ export default function Home() {
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [showLabels, setShowLabels] = useState(true);
   const [showVertices, setShowVertices] = useState(false);
+  const [showMeasurements, setShowMeasurements] = useState(true);
   const [dragMode, setDragMode] = useState<DragMode>("vertex");
   const [isDragging, setIsDragging] = useState(false);
+  const [axisLock, setAxisLock] = useState<AxisLock>(null);
 
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // Keyboard controls for axis locking
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const key = e.key.toLowerCase();
+      if (key === "x") {
+        setAxisLock((prev) => (prev === "x" ? null : "x"));
+      } else if (key === "y") {
+        setAxisLock((prev) => (prev === "y" ? null : "y"));
+      } else if (key === "z") {
+        setAxisLock((prev) => (prev === "z" ? null : "z"));
+      } else if (key === "escape") {
+        setAxisLock(null);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
+  // Reset axis lock when drag ends
+  useEffect(() => {
+    if (!isDragging) {
+      setAxisLock(null);
+    }
+  }, [isDragging]);
 
   // Calculate all element properties
   const elements = useMemo(() => {
@@ -76,6 +107,69 @@ export default function Home() {
       elements.find((el) => `${el.type}-${el.id}` === selectedElementId) || null
     );
   }, [selectedElementId, elements]);
+
+  // Calculate detailed measurements for selected element
+  const selectedElementDetails = useMemo(() => {
+    if (!selectedElement || !data) return null;
+
+    const vertices = selectedElement.vertices.map(
+      (id) => data.vertices.find((v) => v.id === id)!
+    );
+
+    // Calculate side lengths
+    const sideLengths = [];
+    for (let i = 0; i < vertices.length - 1; i++) {
+      const v1 = vertices[i];
+      const v2 = vertices[i + 1];
+      const length = Math.sqrt(
+        Math.pow(v2.x - v1.x, 2) +
+          Math.pow(v2.y - v1.y, 2) +
+          Math.pow(v2.z - v1.z, 2)
+      );
+      sideLengths.push({
+        from: v1.id,
+        to: v2.id,
+        length,
+      });
+    }
+
+    // Calculate angles at each vertex
+    const angles = [];
+    for (let i = 1; i < vertices.length - 1; i++) {
+      const v1 = vertices[i - 1];
+      const v2 = vertices[i];
+      const v3 = vertices[i + 1];
+
+      // Vectors
+      const vec1 = {
+        x: v1.x - v2.x,
+        y: v1.y - v2.y,
+        z: v1.z - v2.z,
+      };
+      const vec2 = {
+        x: v3.x - v2.x,
+        y: v3.y - v2.y,
+        z: v3.z - v2.z,
+      };
+
+      // Dot product and magnitudes
+      const dot = vec1.x * vec2.x + vec1.y * vec2.y + vec1.z * vec2.z;
+      const mag1 = Math.sqrt(vec1.x ** 2 + vec1.y ** 2 + vec1.z ** 2);
+      const mag2 = Math.sqrt(vec2.x ** 2 + vec2.y ** 2 + vec2.z ** 2);
+
+      // Angle in degrees
+      const angle = Math.acos(dot / (mag1 * mag2)) * (180 / Math.PI);
+      angles.push({
+        vertexId: v2.id,
+        angle,
+      });
+    }
+
+    return {
+      sideLengths,
+      angles,
+    };
+  }, [selectedElement, data]);
 
   // Calculate measurements
   const measurements = useMemo(() => {
@@ -232,6 +326,17 @@ export default function Home() {
                     <EyeOff className="w-4 h-4" />
                   )}
                 </button>
+                <button
+                  onClick={() => setShowMeasurements(!showMeasurements)}
+                  className={`p-2 rounded-lg transition-colors ${
+                    showMeasurements
+                      ? "bg-blue-100 text-blue-600"
+                      : "text-gray-500 hover:bg-gray-100"
+                  }`}
+                  title="Toggle measurements"
+                >
+                  <Ruler className="w-4 h-4" />
+                </button>
               </div>
             </div>
           </div>
@@ -291,6 +396,18 @@ export default function Home() {
               </div>
             </div>
 
+            {/* Axis Lock Indicator */}
+            {axisLock && (
+              <div className="mb-4 p-3 bg-purple-50 border border-purple-200 rounded-lg">
+                <p className="text-xs text-purple-700 font-semibold">
+                  🔒 Locked to {axisLock.toUpperCase()}-axis
+                </p>
+                <p className="text-xs text-purple-600 mt-1">
+                  Press {axisLock.toUpperCase()} again or ESC to unlock
+                </p>
+              </div>
+            )}
+
             {/* Element Dropdown */}
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -343,6 +460,13 @@ export default function Home() {
                 {dragMode === "edge" && " Drag edges to resize elements."}
                 {dragMode === "element" &&
                   " Drag elements to move them entirely."}
+              </p>
+              <p className="text-xs text-blue-600 mt-2">
+                ⌨️ Press{" "}
+                <kbd className="px-1 py-0.5 bg-white rounded border">X</kbd>,{" "}
+                <kbd className="px-1 py-0.5 bg-white rounded border">Y</kbd>, or{" "}
+                <kbd className="px-1 py-0.5 bg-white rounded border">Z</kbd> to
+                lock axis
               </p>
               {isDragging && (
                 <p className="text-xs text-orange-600 mt-2">
@@ -442,12 +566,15 @@ export default function Home() {
               scale={0.1}
               showLabels={showLabels}
               showVertices={showVertices}
+              showMeasurements={showMeasurements}
               highlightElement={selectedElement}
               onElementSelect={handleElementSelect}
               onVertexDrag={handleVertexDrag}
               onMultiVertexDrag={handleMultiVertexDrag}
               dragMode={dragMode}
+              axisLock={axisLock}
               onDragStateChange={handleDragStateChange}
+              units={units}
             />
           ) : (
             <div className="h-full flex items-center justify-center">
@@ -463,10 +590,96 @@ export default function Home() {
         <div className="w-80 bg-white border-l overflow-y-auto">
           <div className="p-4">
             <h2 className="text-lg font-semibold text-gray-800 mb-4">
-              Building Information
+              {selectedElement ? "Element Details" : "Building Information"}
             </h2>
 
-            {measurements ? (
+            {selectedElement && selectedElementDetails ? (
+              <div className="space-y-4">
+                {/* Selected Element Info */}
+                <div className="bg-blue-50 rounded-lg p-4">
+                  <h3 className="text-sm font-semibold text-blue-900 mb-2">
+                    {selectedElement.name}
+                  </h3>
+                  <p className="text-xs text-blue-700 capitalize">
+                    Type: {selectedElement.type}
+                  </p>
+                </div>
+
+                {/* Side Lengths */}
+                <div className="bg-green-50 rounded-lg p-4">
+                  <h3 className="text-sm font-semibold text-green-900 mb-3">
+                    Side Lengths
+                  </h3>
+                  <div className="space-y-2">
+                    {selectedElementDetails.sideLengths.map((side, idx) => (
+                      <div key={idx} className="flex justify-between text-xs">
+                        <span className="text-green-700">
+                          V{side.from} → V{side.to}:
+                        </span>
+                        <span className="font-medium text-green-900">
+                          {formatDimension(side.length)} {unitLabel}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Angles */}
+                <div className="bg-purple-50 rounded-lg p-4">
+                  <h3 className="text-sm font-semibold text-purple-900 mb-3">
+                    Interior Angles
+                  </h3>
+                  <div className="space-y-2">
+                    {selectedElementDetails.angles.map((angle, idx) => (
+                      <div key={idx} className="flex justify-between text-xs">
+                        <span className="text-purple-700">
+                          At V{angle.vertexId}:
+                        </span>
+                        <span className="font-medium text-purple-900">
+                          {formatAngle(angle.angle)}°
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Element Properties */}
+                <div className="bg-orange-50 rounded-lg p-4">
+                  <h3 className="text-sm font-semibold text-orange-900 mb-3">
+                    Properties
+                  </h3>
+                  <div className="space-y-2 text-xs">
+                    <div className="flex justify-between">
+                      <span className="text-orange-700">Height:</span>
+                      <span className="font-medium text-orange-900">
+                        {formatDimension(selectedElement.height)} {unitLabel}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-orange-700">Width:</span>
+                      <span className="font-medium text-orange-900">
+                        {formatDimension(selectedElement.width)} {unitLabel}
+                      </span>
+                    </div>
+                    {selectedElement.angle !== undefined && (
+                      <div className="flex justify-between">
+                        <span className="text-orange-700">Slope Angle:</span>
+                        <span className="font-medium text-orange-900">
+                          {formatAngle(selectedElement.angle)}°
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => setSelectedElementId(null)}
+                  className="w-full px-3 py-2 text-sm bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
+                >
+                  Back to Building Info
+                </button>
+              </div>
+            ) : measurements ? (
               <div className="space-y-4">
                 {/* Primary Dimensions */}
                 <div className="bg-blue-50 rounded-lg p-4">
@@ -548,9 +761,12 @@ export default function Home() {
                         {measurements.wallAreas.map((wall) => (
                           <div
                             key={wall.id}
-                            className="flex justify-between text-xs"
+                            className="flex justify-between text-xs cursor-pointer hover:bg-green-100 px-2 py-1 rounded"
+                            onClick={() =>
+                              setSelectedElementId(`wall-${wall.id}`)
+                            }
                           >
-                            <span className="text-green-600 ml-2">
+                            <span className="text-green-600">
                               • {wall.name}:
                             </span>
                             <span className="text-green-700">
@@ -575,9 +791,12 @@ export default function Home() {
                         {measurements.roofAreas.map((roof) => (
                           <div
                             key={roof.id}
-                            className="flex justify-between text-xs"
+                            className="flex justify-between text-xs cursor-pointer hover:bg-green-100 px-2 py-1 rounded"
+                            onClick={() =>
+                              setSelectedElementId(`roof-${roof.id}`)
+                            }
                           >
-                            <span className="text-green-600 ml-2">
+                            <span className="text-green-600">
                               • {roof.name}:
                             </span>
                             <span className="text-green-700">

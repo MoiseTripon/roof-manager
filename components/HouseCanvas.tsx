@@ -12,6 +12,11 @@ interface HouseCanvasProps {
   showLabels?: boolean;
   showVertices?: boolean;
   highlightElement?: ElementProperties | null;
+  onElementSelect?: (elementType: string, elementId: number) => void;
+  onVertexDrag?: (
+    vertexId: number,
+    newPosition: { x: number; y: number; z: number }
+  ) => void;
 }
 
 export const HouseCanvas: React.FC<HouseCanvasProps> = ({
@@ -19,6 +24,9 @@ export const HouseCanvas: React.FC<HouseCanvasProps> = ({
   scale = 0.1,
   showLabels = true,
   showVertices = false,
+  highlightElement,
+  onElementSelect,
+  onVertexDrag,
 }) => {
   // Calculate camera position based on data bounds
   const cameraPosition = useMemo(() => {
@@ -64,6 +72,9 @@ export const HouseCanvas: React.FC<HouseCanvasProps> = ({
             scale={scale}
             showLabels={showLabels}
             showVertices={showVertices}
+            highlightElement={highlightElement}
+            onElementSelect={onElementSelect}
+            onVertexDrag={onVertexDrag}
           />
           <Grid
             args={[20, 20]}

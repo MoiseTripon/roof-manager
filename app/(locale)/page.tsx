@@ -107,6 +107,17 @@ export default function Home() {
     });
   };
 
+  const handleElementSelect = (elementType: string, elementId: number) => {
+    setSelectedElementId(`${elementType}-${elementId}`);
+  };
+
+  const handleVertexDrag = (
+    vertexId: number,
+    newPosition: { x: number; y: number; z: number }
+  ) => {
+    updateVertex(vertexId, newPosition);
+  };
+
   const unitLabel = units === "imperial" ? "ft" : "m";
   const areaUnitLabel = units === "imperial" ? "ft²" : "m²";
 
@@ -238,6 +249,15 @@ export default function Home() {
               </div>
             </div>
 
+            {/* Hint for canvas interaction */}
+            <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <p className="text-xs text-blue-700">
+                💡 <strong>Tip:</strong> Click on elements in the 3D view to
+                select them.
+                {showVertices && " Drag vertices to move them."}
+              </p>
+            </div>
+
             {/* Property Editor */}
             <ElementPropertyEditor
               element={selectedElement}
@@ -330,6 +350,8 @@ export default function Home() {
               showLabels={showLabels}
               showVertices={showVertices}
               highlightElement={selectedElement}
+              onElementSelect={handleElementSelect}
+              onVertexDrag={handleVertexDrag}
             />
           ) : (
             <div className="h-full flex items-center justify-center">
